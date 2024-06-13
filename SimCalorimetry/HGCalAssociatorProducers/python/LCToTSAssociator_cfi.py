@@ -15,6 +15,10 @@ layerClusterToTracksterMergeAssociation = LCToTSAssociatorProducer.clone(
     tracksters = cms.InputTag("ticlTrackstersMerge")
 )
 
+layerClusterToTracksterSuperclusteringAssociation = LCToTSAssociatorProducer.clone(
+    tracksters = cms.InputTag("ticlTracksterLinksSuperclusteringDNN")
+)
+
 layerClusterToSimTracksterAssociation = LCToTSAssociatorProducer.clone(
     tracksters = cms.InputTag("ticlSimTracksters")
 )
@@ -25,3 +29,4 @@ layerClusterToSimTracksterFromCPsAssociation = LCToTSAssociatorProducer.clone(
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 ticl_v5.toModify(layerClusterToTracksterMergeAssociation, tracksters = cms.InputTag("ticlCandidate"))
+(ticl_v5 & ticl_superclustering_mustache_ticl).toModify(layerClusterToTracksterSuperclusteringAssociation, tracksters = cms.InputTag("ticlTracksterLinksSuperclusteringMustache"))

@@ -33,6 +33,7 @@ TICLv5_RECO = cms.PSet(
             'drop *_ticlTracksters*_*_*',
             'keep *_ticlTrackstersCLUE3DHigh_*_*',
             'keep *_ticlTracksterLinks_*_*',
+            'keep *_ticlTracksterLinksSuperclustering*_*_*',
             'keep *_ticlCandidate_*_*',
         ]
     )
@@ -57,6 +58,8 @@ TICLv5_FEVT = cms.PSet(
       'keep *_ticlSimTracksters_*_*',
       'keep *_ticlSimTICLCandidates_*_*',
       'keep *_ticlSimTrackstersFromCP_*_*',
+      'keep *_tracksterSimTracksterAssociationLinkingSuperclustering_*_*',
+      'keep *_tracksterSimTracksterAssociationPRSuperclustering_*_*', 
       )
     )
 
