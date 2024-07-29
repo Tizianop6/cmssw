@@ -58,15 +58,7 @@ ticlDumper = ticlDumper_.clone(
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationLinking"),
             tracksterCollection=cms.InputTag("ticlTrackstersMerge"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters", "fromCPs")
-        ),
-
-        cms.PSet(
-            branchName=cms.string("Mergetracksters"),
-            suffix=cms.string("PU"),
-            associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationLinkingPU"),
-            tracksterCollection=cms.InputTag("ticlTrackstersMerge"),
-            simTracksterCollection=cms.InputTag("ticlSimTracksters", "PU")
-        ),
+        )
     ]
 )
 
@@ -133,15 +125,7 @@ ticl_v5.toModify(ticlDumper,
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationPR"),
             tracksterCollection=cms.InputTag("ticlCandidate"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters")
-        ),
-
-        cms.PSet(
-            branchName=cms.string("ticlCandidate"),
-            suffix=cms.string("PU"),
-            associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationLinkingPU"),
-            tracksterCollection=cms.InputTag("ticlCandidate"),
-            simTracksterCollection=cms.InputTag("ticlSimTracksters", "PU")
-        ),
+        )
     ]
 )
 
