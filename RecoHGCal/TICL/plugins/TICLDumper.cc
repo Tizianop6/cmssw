@@ -908,9 +908,9 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
   for (edm::ParameterSet const& associationPset : associations_parameterSets_) {
     edm::InputTag const& inputTag = associationPset.getParameter<edm::InputTag>("associatorInputTag");
     associations_recoToSim_token_.push_back(consumes<TracksterToTracksterMap>(
-        edm::InputTag(inputTag.label(), "recoToSim", inputTag.process())));
+        edm::InputTag(inputTag.label(), "tracksterToSimTracksterMap", inputTag.process())));
     associations_simToReco_token_.push_back(consumes<TracksterToTracksterMap>(
-        edm::InputTag(inputTag.label(), "simToReco", inputTag.process())));
+        edm::InputTag(inputTag.label(), "simTracksterToTracksterMap", inputTag.process())));
     associations_tracksterCollection_.push_back(
         consumes<std::vector<ticl::Trackster>>(associationPset.getParameter<edm::InputTag>("tracksterCollection")));
     associations_simTracksterCollection_.push_back(
