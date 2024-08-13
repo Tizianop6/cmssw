@@ -54,7 +54,6 @@
 #include "TrackstersPCA.h"
 
 using namespace ticl;
-//int counter=0;
 class TICLCandidateProducer : public edm::stream::EDProducer<> {
 public:
   explicit TICLCandidateProducer(const edm::ParameterSet &ps);
@@ -444,10 +443,6 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
       // Check MTD timing availability
       const auto &trackIndex = cand.trackPtr().get() - (edm::Ptr<reco::Track>(track_h, 0)).get();
       const bool assocQuality = inputTimingView.MVAquality()[trackIndex] > timingQualityThreshold_;
-      /*if (counter<100)
-      {
-      counter++;
-      std::cout << "\n\ninputTimingView.MVAquality()[trackIndex]: "<< inputTimingView.MVAquality()[trackIndex] << "\nassocQuality: "<< assocQuality << "\ninputTimingView.time0()[trackIndex]: "<<inputTimingView.time0()[trackIndex] << "\ninputTimingView.time0Err()[trackIndex]: "<<inputTimingView.time0Err()[trackIndex];}*/
       if (assocQuality) {
         const auto timeHGC = cand.time();
         const auto timeEHGC = cand.timeError();
@@ -471,7 +466,7 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
       cand.setMTDTime(-5.,-5.);
       }
       
-      //cand.setTime(time, timeErr);
+      cand.setTime(time, timeErr);
       
     }else{
       cand.setMTDTime(-10.,-10.);
