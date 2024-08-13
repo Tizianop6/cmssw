@@ -7,6 +7,8 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import 
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
 ticlDumper = ticlDumper_.clone(
+    saveSuperclustering = cms.bool(False),
+    saveRecoSuperclusters = cms.bool(False),
     tracksterCollections = [
         cms.PSet(
             treeName=cms.string("trackstersclue3d"),
