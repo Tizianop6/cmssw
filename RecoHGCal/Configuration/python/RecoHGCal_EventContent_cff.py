@@ -30,7 +30,6 @@ TICL_RECO = cms.PSet(
 TICLv5_RECO = cms.PSet(
     outputCommands = cms.untracked.vstring(
         [
-            'drop *_ticlTracksters*_*_*',
             'keep *_ticlTrackstersCLUE3DHigh_*_*',
             'keep *_ticlTracksterLinks_*_*',
             'keep *_ticlTracksterLinksSuperclustering*_*_*',

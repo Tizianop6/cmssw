@@ -63,7 +63,7 @@
 
 // Helper class for geometry, magnetic field, etc
 using TracksterToTracksterMap =
-      ticl::AssociationMap<ticl::mapWithFractionAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
+    ticl::AssociationMap<ticl::mapWithFractionAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
 class DetectorTools {
 public:
   DetectorTools(const HGCalDDDConstants& hgcons,
@@ -520,7 +520,7 @@ public:
     for (size_t i = 0; i < tracksters.size(); ++i) {
       const auto ts_vec = tsRecoSimSCMap.at(i);
       if (!ts_vec.empty()) {
-        for (const auto& [ts_id, sharedEnergyAndScore] : ts_vec){ 
+        for (const auto& [ts_id, sharedEnergyAndScore] : ts_vec) {
           recoToSim[i].push_back(ts_id);
           recoToSim_score[i].push_back(sharedEnergyAndScore.second);
           recoToSim_sharedE[i].push_back(sharedEnergyAndScore.first);
@@ -535,7 +535,7 @@ public:
     for (size_t i = 0; i < simTracksters.size(); ++i) {
       const auto ts_vec = tsSimToRecoSCMap.at(i);
       if (!ts_vec.empty()) {
-        for (const auto& [ts_id, sharedEnergyAndScore] : ts_vec){ 
+        for (const auto& [ts_id, sharedEnergyAndScore] : ts_vec) {
           simToReco[i].push_back(ts_id);
           simToReco_score[i].push_back(sharedEnergyAndScore.second);
           simToReco_sharedE[i].push_back(sharedEnergyAndScore.first);
