@@ -54,7 +54,7 @@
 #include "TrackstersPCA.h"
 
 using namespace ticl;
-
+//int counter=0;
 class TICLCandidateProducer : public edm::stream::EDProducer<> {
 public:
   explicit TICLCandidateProducer(const edm::ParameterSet &ps);
@@ -444,12 +444,16 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
       // Check MTD timing availability
       const auto &trackIndex = cand.trackPtr().get() - (edm::Ptr<reco::Track>(track_h, 0)).get();
       const bool assocQuality = inputTimingView.MVAquality()[trackIndex] > timingQualityThreshold_;
+      /*if (counter<100)
+      {
+      counter++;
+      std::cout << "\n\ninputTimingView.MVAquality()[trackIndex]: "<< inputTimingView.MVAquality()[trackIndex] << "\nassocQuality: "<< assocQuality << "\ninputTimingView.time0()[trackIndex]: "<<inputTimingView.time0()[trackIndex] << "\ninputTimingView.time0Err()[trackIndex]: "<<inputTimingView.time0Err()[trackIndex];}*/
       if (assocQuality) {
         const auto timeHGC = cand.time();
         const auto timeEHGC = cand.timeError();
         const auto timeMTD = inputTimingView.time0()[trackIndex];
         const auto timeEMTD = inputTimingView.time0Err()[trackIndex];
-
+        /*
         if (useTimingAverage_ && (timeEMTD > 0 && timeEHGC > 0)) {
           // Compute weighted average between HGCAL and MTD timing
           const auto invTimeESqHGC = pow(timeEHGC, -2);
@@ -460,11 +464,18 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
         } else if (timeEMTD > 0) {
           time = timeMTD;
           timeErr = timeEMTD;
-        }
+        }*/
+        cand.setMTDTime(inputTimingView.time0()[trackIndex], inputTimingView.time0Err()[trackIndex]);
       }
-      cand.setTime(time, timeErr);
-      cand.setMTDTime(inputTimingView.time()[trackIndex], inputTimingView.timeErr()[trackIndex]);
-    }
+      else{
+      cand.setMTDTime(-5.,-5.);
+      }
+      
+      //cand.setTime(time, timeErr);
+      
+    }else{
+      cand.setMTDTime(-10.,-10.);
+      }
   }
 }
 
@@ -487,7 +498,7 @@ void TICLCandidateProducer::fillDescriptions(edm::ConfigurationDescriptions &des
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
   desc.add<bool>("useMTDTiming", true);
-  desc.add<bool>("useTimingAverage", true);
+  desc.add<bool>("useTimingAverage", false);
   desc.add<double>("timingQualityThreshold", 0.5);
   desc.add<std::string>("cutTk",
                         "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "

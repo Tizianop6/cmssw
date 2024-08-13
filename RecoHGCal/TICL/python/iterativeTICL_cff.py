@@ -33,11 +33,11 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
     ),
     regressionAndPid = cms.bool(True)
 )
-ticlCandidate = _ticlCandidateProducer.clone()
+ticlCandidate = _ticlCandidateProducer.clone(useMTDTiming = cms.bool(True), useTimingAverage = cms.bool(False))
 mtdSoA = _mtdSoAProducer.clone()
 
 pfTICL = _pfTICLProducer.clone()
-ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTICLv5 = cms.bool(True), useTimingAverage=True)
+ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTICLv5 = cms.bool(True) , useMTDTiming = cms.bool(True), useTimingAverage = cms.bool(False))
 
 ticlPFTask = cms.Task(pfTICL)
 

@@ -325,6 +325,9 @@ private:
   std::vector<double> candidate_pz;
   std::vector<float> candidate_time;
   std::vector<float> candidate_time_err;
+  std::vector<float> candidate_time_MTD;
+  std::vector<float> candidate_time_MTD_err;
+  
   std::vector<std::vector<float>> candidate_id_probabilities;
   std::vector<std::vector<uint32_t>> tracksters_in_candidate;
   std::vector<int> track_in_candidate;
@@ -617,6 +620,8 @@ void TICLDumper::clearVariables() {
   candidate_pz.clear();
   candidate_time.clear();
   candidate_time_err.clear();
+  candidate_time_MTD.clear();
+  candidate_time_MTD_err.clear();  
   candidate_id_probabilities.clear();
   tracksters_in_candidate.clear();
   track_in_candidate.clear();
@@ -891,6 +896,8 @@ void TICLDumper::beginJob() {
     candidate_tree_->Branch("candidate_id_probabilities", &candidate_id_probabilities);
     candidate_tree_->Branch("candidate_time", &candidate_time);
     candidate_tree_->Branch("candidate_timeErr", &candidate_time_err);
+    candidate_tree_->Branch("candidate_time_MTD", &candidate_time_MTD);
+    candidate_tree_->Branch("candidate_time_MTD_err", &candidate_time_MTD_err);
     candidate_tree_->Branch("candidate_energy", &candidate_energy);
     candidate_tree_->Branch("candidate_raw_energy", &candidate_raw_energy);
     candidate_tree_->Branch("candidate_px", &candidate_px);
@@ -1775,6 +1782,9 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     candidate_pz.push_back(candidate.pz());
     candidate_time.push_back(candidate.time());
     candidate_time_err.push_back(candidate.timeError());
+    candidate_time_MTD.push_back(candidate.MTDtime());
+    candidate_time_MTD_err.push_back(candidate.MTDtimeError());
+    
     std::vector<float> id_probs;
     for (int j = 0; j < 8; j++) {
       ticl::Trackster::ParticleType type = static_cast<ticl::Trackster::ParticleType>(j);
