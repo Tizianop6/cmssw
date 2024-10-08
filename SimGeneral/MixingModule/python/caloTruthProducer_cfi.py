@@ -25,6 +25,7 @@ caloParticles = cms.PSet(
 #                cms.InputTag('g4SimHits','EcalHitsES')
 #            )
 	),
+        bunchspace = cms.uint32(25), #ns
 	simTrackCollection = cms.InputTag('g4SimHits'),
 	simVertexCollection = cms.InputTag('g4SimHits'),
 	genParticleCollection = cms.InputTag('genParticles'),
@@ -61,7 +62,7 @@ fastSim.toReplaceWith(caloParticles, cms.PSet()) # don't allow this to run in fa
 
 from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
 phase2_common.toModify(
-    caloParticles, 
+    caloParticles,
     simHitCollections = cms.PSet(
         hgc = cms.VInputTag(
             cms.InputTag('g4SimHits', 'HGCHitsEE'),
