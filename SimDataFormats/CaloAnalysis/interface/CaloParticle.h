@@ -189,12 +189,17 @@ public:
     ++nsimhits_;
   }
 
+  float simTime() const { return time_; }
+
+  void addSimTime(const float time) { time_ = time; }
+
 protected:
   uint64_t nsimhits_{0};
   EncodedEventId event_;
 
   uint32_t particleId_{0};
   float simhit_energy_{0.f};
+  float time_{-99.f};
   std::vector<uint32_t> hits_;
   std::vector<float> fractions_;
 

@@ -95,6 +95,8 @@ private:
   */
   const unsigned int maximumSubsequentBunchCrossing_;
 
+  const unsigned int bunchSpacing_;
+
   const edm::InputTag simTrackLabel_;
   const edm::InputTag simVertexLabel_;
   edm::Handle<std::vector<SimTrack>> hSimTracks;
@@ -151,11 +153,13 @@ namespace {
                              CaloTruthAccumulator::calo_particles &caloParticles,
                              std::unordered_multimap<Barcode_t, Index_t> &simHitBarcodeToIndex,
                              std::unordered_map<int, std::map<int, float>> &simTrackDetIdEnergyMap,
+                             std::unordered_map<uint32_t, float> &vertex_time_map,
                              Selector selector)
         : output_(output),
           caloParticles_(caloParticles),
           simHitBarcodeToIndex_(simHitBarcodeToIndex),
           simTrackDetIdEnergyMap_(simTrackDetIdEnergyMap),
+          vertex_time_map_(vertex_time_map),
           selector_(selector) {}
     template <typename Vertex, typename Graph>
     void discover_vertex(Vertex u, const Graph &g) {
@@ -191,6 +195,7 @@ namespace {
         if (selector_(edge_property)) {
           IfLogDebug(DEBUG, messageCategoryGraph_) << "Adding CaloParticle: " << edge_property.simTrack->trackId();
           output_.pCaloParticles->emplace_back(*(edge_property.simTrack));
+          output_.pCaloParticles->back().addSimTime(vertex_time_map_[(edge_property.simTrack)->vertIndex()]);
           caloParticles_.sc_start_.push_back(output_.pSimClusters->size());
         }
       }
@@ -213,6 +218,7 @@ namespace {
     CaloTruthAccumulator::calo_particles &caloParticles_;
     std::unordered_multimap<Barcode_t, Index_t> &simHitBarcodeToIndex_;
     std::unordered_map<int, std::map<int, float>> &simTrackDetIdEnergyMap_;
+    std::unordered_map<uint32_t, float> &vertex_time_map_;
     Selector selector_;
   };
 }  // namespace
@@ -223,6 +229,7 @@ CaloTruthAccumulator::CaloTruthAccumulator(const edm::ParameterSet &config,
     : messageCategory_("CaloTruthAccumulator"),
       maximumPreviousBunchCrossing_(config.getParameter<unsigned int>("maximumPreviousBunchCrossing")),
       maximumSubsequentBunchCrossing_(config.getParameter<unsigned int>("maximumSubsequentBunchCrossing")),
+      bunchSpacing_(config.getParameter<unsigned int>("bunchspace")),
       simTrackLabel_(config.getParameter<edm::InputTag>("simTrackCollection")),
       simVertexLabel_(config.getParameter<edm::InputTag>("simVertexCollection")),
       collectionTags_(),
@@ -425,6 +432,11 @@ void CaloTruthAccumulator::accumulateEvent(const T &event,
     idx++;
   }
 
+  std::unordered_map<uint32_t, float> vertex_time_map;
+  for (uint32_t i = 0; i < vertices.size(); i++) {
+    vertex_time_map[i] = vertices[i].position().t() * 1e9 + event.bunchCrossing() * static_cast<int>(bunchSpacing_);
+  }
+
   /**
   Build the main decay graph and assign the SimTrack to each edge. The graph
   built here will only contain the particles that have a decay vertex
@@ -512,6 +524,7 @@ void CaloTruthAccumulator::accumulateEvent(const T &event,
       m_caloParticles,
       m_simHitBarcodeToIndex,
       simTrackDetIdEnergyMap,
+      vertex_time_map,
       [&](EdgeProperty &edge_property) -> bool {
         // Apply selection on SimTracks in order to promote them to be
         // CaloParticles. The function returns TRUE if the particle satisfies
@@ -591,3 +604,4 @@ void CaloTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PCaloH
 
 // Register with the framework
 DEFINE_DIGI_ACCUMULATOR(CaloTruthAccumulator);
+
