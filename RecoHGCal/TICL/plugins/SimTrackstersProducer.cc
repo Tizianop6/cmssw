@@ -260,7 +260,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto& simClustersToRecoColl = evt.get(associatorMapSimClusterToReco_token_);
   const auto& caloParticlesToRecoColl = evt.get(associatorMapCaloParticleToReco_token_);
   const auto& simVertices = evt.get(simVerticesToken_);
-
+ 
   edm::Handle<std::vector<TrackingParticle>> trackingParticles_h;
   evt.getByToken(trackingParticleToken_, trackingParticles_h);
   edm::Handle<std::vector<reco::Track>> recoTracks_h;
@@ -279,6 +279,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   int loop_index = 0;
   for (const auto& [key, lcVec] : caloParticlesToRecoColl) {
     auto const& cp = *(key);
+    std::cout << "\n cp:"<<cp << "\n &cp" << &cp;
+
     auto cpIndex = &cp - &caloparticles[0];
     for (const auto& scRef : cp.simClusters()) {
       auto const& sc = *(scRef);
@@ -292,6 +294,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
 
     // Create a Trackster from the object entering HGCal
     if (cp.g4Tracks()[0].crossedBoundary()) {
+
       regr_energy = cp.g4Tracks()[0].getMomentumAtBoundary().energy();
       float time = cp.g4Tracks()[0].getPositionAtBoundary().t();
       addTrackster(cpIndex,
@@ -339,7 +342,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
       }
       scSimTracksterIdx.shrink_to_fit();
     }
-    float time = simVertices[cp.g4Tracks()[0].vertIndex()].position().t();
+    float time = cp.simTime();
+    std::cout << "\n Trackster time:"<< time;
     // Create a Trackster from any CP
     addTrackster(cpIndex,
                  lcVec,
@@ -482,7 +486,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
       cand.setMTDTime(MTDst->time(), 0);
     }
 
-    cand.setTime(simVertices[cp.g4Tracks()[0].vertIndex()].position().t() * pow(10, 9), 0);
+    cand.setTime(cp.simTime(), 0);
+    std::cout << "\n Cand time:"<< cp.simTime()<<"\n";
 
     for (const auto& trackster : cand.tracksters()) {
       rawEnergy += trackster->raw_energy();
