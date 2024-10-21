@@ -725,12 +725,18 @@ private:
   std::vector<unsigned int> track_id;
   std::vector<float> track_hgcal_x;
   std::vector<float> track_hgcal_y;
+  std::vector<float> track_hgcal_xErr;
+  std::vector<float> track_hgcal_yErr;
+  std::vector<float> track_hgcal_xyCov;
   std::vector<float> track_hgcal_z;
   std::vector<float> track_hgcal_px;
   std::vector<float> track_hgcal_py;
   std::vector<float> track_hgcal_pz;
   std::vector<float> track_hgcal_eta;
   std::vector<float> track_hgcal_phi;
+  std::vector<float> track_hgcal_etaErr;
+  std::vector<float> track_hgcal_phiErr;
+  std::vector<float> track_hgcal_etaphiCov;
   std::vector<float> track_hgcal_pt;
   std::vector<float> track_pt;
   std::vector<int> track_quality;
@@ -827,9 +833,15 @@ void TICLDumper::clearVariables() {
   track_id.clear();
   track_hgcal_x.clear();
   track_hgcal_y.clear();
+  track_hgcal_xErr.clear();
+  track_hgcal_yErr.clear();
+  track_hgcal_xyCov.clear();
   track_hgcal_z.clear();
   track_hgcal_eta.clear();
   track_hgcal_phi.clear();
+  track_hgcal_etaErr.clear();
+  track_hgcal_phiErr.clear();
+  track_hgcal_etaphiCov.clear();
   track_hgcal_px.clear();
   track_hgcal_py.clear();
   track_hgcal_pz.clear();
@@ -1021,9 +1033,15 @@ void TICLDumper::beginJob() {
     tracks_tree_->Branch("track_id", &track_id);
     tracks_tree_->Branch("track_hgcal_x", &track_hgcal_x);
     tracks_tree_->Branch("track_hgcal_y", &track_hgcal_y);
+    tracks_tree_->Branch("track_hgcal_xErr", &track_hgcal_xErr);
+    tracks_tree_->Branch("track_hgcal_yErr", &track_hgcal_yErr);
+    tracks_tree_->Branch("track_hgcal_xyCov", &track_hgcal_xyCov);
     tracks_tree_->Branch("track_hgcal_z", &track_hgcal_z);
     tracks_tree_->Branch("track_hgcal_eta", &track_hgcal_eta);
     tracks_tree_->Branch("track_hgcal_phi", &track_hgcal_phi);
+    tracks_tree_->Branch("track_hgcal_etaErr", &track_hgcal_etaErr);
+    tracks_tree_->Branch("track_hgcal_phiErr", &track_hgcal_phiErr);
+    tracks_tree_->Branch("track_hgcal_etaphiCov", &track_hgcal_etaphiCov);
     tracks_tree_->Branch("track_hgcal_pt", &track_hgcal_pt);
     tracks_tree_->Branch("track_pt", &track_pt);
     tracks_tree_->Branch("track_missing_outer_hits", &track_missing_outer_hits);
@@ -1320,12 +1338,43 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     if (tsos.isValid()) {
       const auto& globalPos = tsos.globalPosition();
       const auto& globalMom = tsos.globalMomentum();
+      double x = tsos.globalPosition().x();
+      double y = tsos.globalPosition().y();
+      double z = tsos.globalPosition().z();
+      // Get covariance in x-y coordinates
+      AlgebraicMatrix55 localErrorMatrix = tsos.localError().matrix();
+      AlgebraicMatrix22 covMatrixXY;
+      covMatrixXY(0,0) = localErrorMatrix(3,3);
+      covMatrixXY(0,1) = localErrorMatrix(3,4);
+      covMatrixXY(1,0) = localErrorMatrix(3,4);
+      covMatrixXY(1,1) = localErrorMatrix(4,4);
+      // Calculate Jacobian
+      AlgebraicMatrix22 theJacobian;
+      double sqrt_term = std::sqrt((x*x + y*y) / (z*z) + 1);
+      double denom_eta = (x*x + y*y) * (x*x + y*y + z*z);
+      theJacobian(0,0) = - (x*z*z * sqrt_term) / denom_eta; // deta_dx
+      theJacobian(0,1) = - (y*z*z * sqrt_term) / denom_eta; // deta_dy
+      double denom_phi = x*x + y*y;
+      theJacobian(1,0) = - y / denom_phi; // dphi_dx
+      theJacobian(1,1) = x / denom_phi; // dphi_dy
+      
+      // Transform LocalError from x-y coordinates to eta-phi
+      AlgebraicMatrix22 covMatrixEtaPhi = ROOT::Math::Transpose(theJacobian) * covMatrixXY * theJacobian;
+      
+      //return std::pair<float,float>{covMatrixEtaPhi(0,0),covMatrixEtaPhi(1,1)};
+
       track_id.push_back(i);
       track_hgcal_x.push_back(globalPos.x());
       track_hgcal_y.push_back(globalPos.y());
+      track_hgcal_xErr.push_back(std::sqrt(covMatrixXY(0,0)));
+      track_hgcal_yErr.push_back(std::sqrt(covMatrixXY(1,1)));
+      track_hgcal_xyCov.push_back(covMatrixXY(0,1));
       track_hgcal_z.push_back(globalPos.z());
       track_hgcal_eta.push_back(globalPos.eta());
       track_hgcal_phi.push_back(globalPos.phi());
+      track_hgcal_etaErr.push_back(std::sqrt(covMatrixEtaPhi(0,0)));
+      track_hgcal_phiErr.push_back(std::sqrt(covMatrixEtaPhi(1,1)));
+      track_hgcal_etaphiCov.push_back(covMatrixEtaPhi(0,1));
       track_hgcal_px.push_back(globalMom.x());
       track_hgcal_py.push_back(globalMom.y());
       track_hgcal_pz.push_back(globalMom.z());
