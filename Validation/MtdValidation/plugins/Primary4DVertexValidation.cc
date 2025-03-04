@@ -62,10 +62,19 @@
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "CLHEP/Units/PhysicalConstants.h"
 
+
+// TFileService
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "TTree.h"
+#include "TFile.h"
+
 // class declaration
 class Primary4DVertexValidation : public DQMEDAnalyzer {
   typedef math::XYZTLorentzVector LorentzVector;
 
+  TTree* dump_tree;
   // auxiliary class holding simulated vertices
   struct simPrimaryVertex {
     simPrimaryVertex(double x1, double y1, double z1, double t1)
@@ -204,8 +213,82 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker& i, edm::Run const&, edm::EventSetup const&) override;
+  void ClearVectors();
+  void MakeBranches();
 
 private:
+
+  
+  //vectors for dump in TTree:
+  std::vector<float> meTrackPullTot_vec;
+  std::vector<float> meTrackResTot_vec;
+  std::vector<float> recoP_vec;
+  std::vector<float> recoPt_vec;
+  std::vector<float> simPt_vec;
+  std::vector<float> simEta_vec;
+  std::vector<float> simPhi_vec;
+
+  std::vector<float> mtdQualMVA_vec;
+  std::vector<float> t0safe_vec;
+  std::vector<float> sigmat0Safe_vec;
+  std::vector<float> trackEta_vec;
+  std::vector<float> trackPhi_vec;
+  std::vector<float> meTrackZposResTot_vec;
+  std::vector<int> simPdgId_vec;
+  std::vector<float> isPi_vec;
+  std::vector<float> isP_vec;
+  std::vector<float> isK_vec;
+  std::vector<float> noPID_vec;
+  std::vector<float> selectedLVMatching_vec;
+  std::vector<float> selectRecoTrk_vec;
+  std::vector<float> selectTP_vec;
+
+  std::vector<float> xsim_vec;
+  std::vector<float> ysim_vec;
+  std::vector<float> zsim_vec;
+  std::vector<float> xPCA_vec;
+  std::vector<float> yPCA_vec;
+  std::vector<float> zPCA_vec;
+  std::vector<float> vtsim_vec;
+  std::vector<float> tsim_vec;
+  std::vector<float> tEst_vec;
+  std::vector<float> d3D_vec;
+  std::vector<float> dZ_vec;
+
+  std::vector<float> nt_vec;
+  std::vector<float> PUnt_vec;
+  std::vector<float> Fakent_vec;
+  std::vector<float> sumWnt_vec;
+  std::vector<float> sumWos_vec;
+  std::vector<float> sumPt_vec;
+  std::vector<float> PUsumWnt_vec;
+  std::vector<float> PUsumWos_vec;
+  std::vector<float> SecsumWos_vec;
+  std::vector<float> FakesumWos_vec;
+  std::vector<float> PUsumPt_vec;
+  std::vector<float> selectedLV_vec;
+  std::vector<float> matchCategory_vec;
+  
+
+  //std::vector<float> probPi_vec;
+  //std::vector<float> probK_vec;
+  //std::vector<float> probP_vec;
+  std::vector<float> noPIDtype_vec;
+  std::vector<int> parentPDGID_vec;
+  std::vector<int> tpStatus_vec;
+
+  std::vector<float> vtx_tError_vec;
+  std::vector<float> vtx_t_vec;
+  std::vector<float> trackW_vec;
+  std::vector<float> singlevtx_tError_vec;
+  std::vector<float> singlevtx_t_vec;
+  std::vector<float> pathlength_vec;
+  std::vector<float> mass_vec;
+  std::vector<float> sigmat0_vec;
+
+
+
+
   void matchReco2Sim(std::vector<recoPrimaryVertex>&,
                      std::vector<simPrimaryVertex>&,
                      const edm::ValueMap<float>&,
@@ -558,9 +641,149 @@ Primary4DVertexValidation::Primary4DVertexValidation(const edm::ParameterSet& iC
   probPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPi"));
   probKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probK"));
   probPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probP"));
+  MakeBranches();
 }
 
 Primary4DVertexValidation::~Primary4DVertexValidation() {}
+
+
+void Primary4DVertexValidation::MakeBranches() {
+  edm::Service<TFileService> fs;
+  dump_tree = fs->make<TTree>( "tree1", "tree2" );
+  dump_tree->Branch("trackPullsTot",&meTrackPullTot_vec);
+  dump_tree->Branch("trackResTot",&meTrackResTot_vec);
+  dump_tree->Branch("recoP",&recoP_vec);
+  dump_tree->Branch("recoPt",&recoPt_vec);
+  dump_tree->Branch("mtdQualMVA",&mtdQualMVA_vec);
+  dump_tree->Branch("t0safe",&t0safe_vec);
+  dump_tree->Branch("sigmat0Safe",&sigmat0Safe_vec);
+  dump_tree->Branch("trackEta",&trackEta_vec);
+  dump_tree->Branch("trackPhi",&trackPhi_vec);
+  dump_tree->Branch("simPdgId",&simPdgId_vec);
+  dump_tree->Branch("parentPDGID",&parentPDGID_vec);
+  dump_tree->Branch("isPi",&isPi_vec);
+  dump_tree->Branch("isP",&isP_vec);
+  dump_tree->Branch("isK",&isK_vec);
+  dump_tree->Branch("noPID",&noPID_vec);
+  dump_tree->Branch("selectedLVMatching",&selectedLVMatching_vec);
+  dump_tree->Branch("selectRecoTrk",&selectRecoTrk_vec);
+  dump_tree->Branch("selectedLV",&selectedLV_vec);
+  dump_tree->Branch("selectTP",&selectTP_vec);
+  dump_tree->Branch("matchCategory",&matchCategory_vec);
+  //dump_tree->Branch("probPi",&probPi_vec);
+  //dump_tree->Branch("probK",&probK_vec);
+  //dump_tree->Branch("probP",&probP_vec);
+  dump_tree->Branch("noPIDtype",&noPIDtype_vec);
+  dump_tree->Branch("xsim",&xsim_vec);
+  dump_tree->Branch("ysim",&ysim_vec);
+  dump_tree->Branch("zsim",&zsim_vec); 
+  dump_tree->Branch("xPCA",&xPCA_vec); 
+  dump_tree->Branch("yPCA",&yPCA_vec);  
+  dump_tree->Branch("zPCA",&zPCA_vec);
+  dump_tree->Branch("vtsim",&vtsim_vec);
+  dump_tree->Branch("tsim",&tsim_vec);
+  dump_tree->Branch("tEst",&tEst_vec);
+  dump_tree->Branch("d3D",&d3D_vec);
+  dump_tree->Branch("dZ",&dZ_vec);
+
+  dump_tree->Branch("nt",&nt_vec);
+  dump_tree->Branch("PUnt",&PUnt_vec);
+  dump_tree->Branch("Fakent",&Fakent_vec);
+  dump_tree->Branch("sumWnt",&sumWnt_vec);
+  dump_tree->Branch("sumWos",&sumWos_vec);
+  dump_tree->Branch("sumPt",&sumPt_vec);
+  dump_tree->Branch("PUsumWnt",&PUsumWnt_vec);
+  dump_tree->Branch("PUsumWos",&PUsumWos_vec);
+  dump_tree->Branch("SecsumWos",&SecsumWos_vec);
+  dump_tree->Branch("FakesumWos",&FakesumWos_vec);
+  dump_tree->Branch("PUsumPt",&PUsumPt_vec);
+  dump_tree -> Branch("vtxtError",&vtx_tError_vec);
+  dump_tree -> Branch("vtxt",&vtx_t_vec);
+  dump_tree -> Branch("trackW",&trackW_vec);
+  dump_tree -> Branch("singlevtxtError",&singlevtx_tError_vec);
+  dump_tree -> Branch("singlevtxt",&singlevtx_t_vec);
+  dump_tree->Branch("tpStatus",&tpStatus_vec);
+  dump_tree->Branch("pathlength",&pathlength_vec);
+  dump_tree->Branch("mass",&mass_vec);
+  dump_tree->Branch("sigmat0",&sigmat0_vec);
+
+
+
+ 
+
+
+}
+
+void Primary4DVertexValidation::ClearVectors() {
+  meTrackPullTot_vec.clear();
+  meTrackResTot_vec.clear();
+  recoP_vec.clear();
+  recoPt_vec.clear();
+  mtdQualMVA_vec.clear();
+  t0safe_vec.clear();
+  sigmat0Safe_vec.clear();
+  trackEta_vec.clear();
+  trackPhi_vec.clear();
+  meTrackZposResTot_vec.clear();
+  simPdgId_vec.clear();
+  parentPDGID_vec.clear();
+  isPi_vec.clear();
+  isP_vec.clear();
+  isK_vec.clear();
+  noPID_vec.clear();
+  //probPi_vec.clear();
+  //probK_vec.clear();
+  //probP_vec.clear();
+  noPIDtype_vec.clear();
+  selectedLVMatching_vec.clear();
+  selectRecoTrk_vec.clear();
+  selectTP_vec.clear();
+  selectedLV_vec.clear();
+  matchCategory_vec.clear();
+  xsim_vec.clear();
+  ysim_vec.clear();
+  zsim_vec.clear();
+  xPCA_vec.clear();
+  yPCA_vec.clear();
+  zPCA_vec.clear();
+  vtsim_vec.clear();
+  tsim_vec.clear();
+  tEst_vec.clear();
+  d3D_vec.clear();
+  dZ_vec.clear();
+  simPhi_vec.clear();
+  simEta_vec.clear();
+  simPt_vec.clear();
+  tpStatus_vec.clear();
+
+  nt_vec.clear();
+  PUnt_vec.clear();
+  Fakent_vec.clear();
+  sumWnt_vec.clear();
+  sumWos_vec.clear();
+  sumPt_vec.clear();
+  PUsumWnt_vec.clear();
+  PUsumWos_vec.clear();
+  SecsumWos_vec.clear();
+  FakesumWos_vec.clear();
+  PUsumPt_vec.clear();
+  vtx_tError_vec.clear();
+  vtx_t_vec.clear();
+  trackW_vec.clear();
+  singlevtx_tError_vec.clear();
+  singlevtx_t_vec.clear();
+  pathlength_vec.clear();
+  mass_vec.clear();
+  sigmat0_vec.clear();
+
+
+            //probPi_vec.push_back(probPi);
+            //probK_vec.push_back(probK);
+            //probP_vec.push_back(probP);
+            //noPIDtype_vec.push_back(noPIDtype);
+
+}
+
 
 //
 // member functions
@@ -1767,11 +1990,14 @@ void Primary4DVertexValidation::matchReco2Sim(std::vector<recoPrimaryVertex>& re
   }
 
   // Filling infos for matching rec and sim vertices
+  //std::cout << "recopv.size(): " << recopv.size() << std::endl ;
   for (unsigned int iv = 0; iv < recopv.size(); iv++) {
     const reco::Vertex* vertex = recopv.at(iv).recVtx;
     LogTrace("Primary4DVertexValidation") << "iv (rec): " << iv;
-
+    //std::cout << "simpv.size(); " << simpv.size() << std::endl ;
+    int trkcounter=0;
     for (unsigned int iev = 0; iev < simpv.size(); iev++) {
+      trkcounter=0;
       double wnt = 0;
       double wos = 0;
       double evwnt = 0;       // weighted number of tracks from sim event iev in the current recvtx
@@ -1779,6 +2005,7 @@ void Primary4DVertexValidation::matchReco2Sim(std::vector<recoPrimaryVertex>& re
       unsigned int evnt = 0;  // number of tracks from sim event iev in the current recvtx
 
       for (auto iTrack = vertex->tracks_begin(); iTrack != vertex->tracks_end(); ++iTrack) {
+        trkcounter++;
         if (vertex->trackWeight(*iTrack) < trackweightTh_) {
           continue;
         }
@@ -1795,6 +2022,7 @@ void Primary4DVertexValidation::matchReco2Sim(std::vector<recoPrimaryVertex>& re
           evnt++;
         }
       }  // RecoTracks loop
+      //std::cout << "trkcounter "<< trkcounter<<std::endl;
 
       // require 2 tracks for a wos-match
       if ((evwos > 0) && (evwos > recopv.at(iv).maxwos) && (evnt > 1)) {
@@ -2078,11 +2306,11 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
               << "Reco vtx leading match inconsistent: BX/ID " << simpv.at(iev).eventId.bunchCrossing() << " "
               << simpv.at(iev).eventId.event();
         }
-#ifdef EDM_ML_DEBUG
+        #ifdef EDM_ML_DEBUG
         if (selectedLVMatching) {
           printSimVtxRecoVtxInfo(simpv.at(iev), recopv.at(iv));
         }
-#endif
+        #endif
         double vzsim = simpv.at(iev).z;
         double vtsim = simpv.at(iev).t * simUnit_;
 
@@ -2126,7 +2354,7 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
 
           auto tp_info = getMatchedTP(*iTrack, vsim).first;
           int matchCategory = getMatchedTP(*iTrack, vsim).second;
-
+          //std::cout << "matchcategory: "<< matchCategory << endl;
           // PU, fake and secondary tracks
           if (selectedVtxMatching) {
             unsigned int no_PIDtype = 0;
@@ -2153,11 +2381,11 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             }
             // reco track matched to any TP
             if (tp_info != nullptr) {
-#ifdef EDM_ML_DEBUG
+              #ifdef EDM_ML_DEBUG
               if (selectedLV) {
                 printMatchedRecoTrackInfo(*vertex, *iTrack, *tp_info, matchCategory);
               }
-#endif
+              #endif
               // matched TP not associated to any daughter track of a given sim vertex but having the same eventID (track from secondary vtx)
               if (matchCategory == 1) {
                 categoryVector.push_back(matchCategory);
@@ -2191,6 +2419,93 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             sumPt += (*iTrack)->pt();
             sumPt2 += ((*iTrack)->pt() * (*iTrack)->pt());
           }
+          if (tp_info != nullptr && matchCategory == 1) {
+            double mass = (*tp_info)->mass();
+            double tsim = (*tp_info)->parentVertex()->position().t() * simUnit_;
+            double tEst = timeFromTrueMass(mass, pathLength[*iTrack], momentum[*iTrack], time[*iTrack]);
+
+            double xsim = (*tp_info)->parentVertex()->position().x();
+            double ysim = (*tp_info)->parentVertex()->position().y();
+            double zsim = (*tp_info)->parentVertex()->position().z();
+            double xPCA = (*iTrack)->vx();
+            double yPCA = (*iTrack)->vy();
+            double zPCA = (*iTrack)->vz();
+            double dZ = zPCA - zsim;
+            double d3D = std::sqrt((xPCA - xsim) * (xPCA - xsim) + (yPCA - ysim) * (yPCA - ysim) + dZ * dZ);
+            // orient d3D according to the projection of RECO - SIM onto simulated momentum
+            if ((xPCA - xsim) * ((*tp_info)->px()) + (yPCA - ysim) * ((*tp_info)->py()) + dZ * ((*tp_info)->pz()) <
+                0.) {
+              d3D = -d3D;
+            }
+            bool selectTP = trkTPSelLV(**tp_info);
+            if (sigmat0Safe[*iTrack] == -1)
+              continue;
+            unsigned int noPIDtype = 0;
+            bool noPID = false, isPi = false, isK = false, isP = false;
+            const TrackingVertexRef parentVertex = (*tp_info)->parentVertex();
+            if (parentVertex.isNonnull() && !parentVertex->sourceTracks().empty()) {
+              //std::cout << "parent vtx start position: " << parentVertex->position() << std::endl;
+              int nParents = 0 ;
+              for (const auto& parentTP : parentVertex->sourceTracks()) {
+                  if(nParents==0) parentPDGID_vec.push_back(parentTP->pdgId());
+                  if (nParents > 0){ 
+                    std::cout << "WARN: Multiple parents found" << std::endl;
+                    std::cout << "Parent PDG ID: " << parentTP->pdgId() << std::endl;
+                    }
+                  nParents++;
+                  //std::cout << "Parent PDG ID: " << parentTP->pdgId() << std::endl;
+              }
+            }else{
+              parentPDGID_vec.push_back(-999);
+            }
+
+            isParticle(*iTrack, sigmat0, sigmat0Safe, probPi, probK, probP, noPIDtype, noPID, isPi, isK, isP);
+            matchCategory_vec.push_back(matchCategory);
+            pathlength_vec.push_back(pathLength[*iTrack]);
+            mass_vec.push_back(mass);
+            selectedLV_vec.push_back(selectedLV);
+            selectedLVMatching_vec.push_back(selectedLVMatching);
+            selectRecoTrk_vec.push_back(selectRecoTrk);
+            selectTP_vec.push_back(selectTP);
+            meTrackResTot_vec.push_back(t0Safe[*iTrack] - tsim);
+            meTrackPullTot_vec.push_back((t0Safe[*iTrack] - tsim) / sigmat0Safe[*iTrack]);
+            recoP_vec.push_back((*iTrack)->p());
+            recoPt_vec.push_back((*iTrack)->pt());
+            simEta_vec.push_back((*tp_info)->eta());
+            simPhi_vec.push_back((*tp_info)->phi());
+            simPt_vec.push_back((*tp_info)->pt());
+            tpStatus_vec.push_back((*tp_info)->status());
+            mtdQualMVA_vec.push_back(mtdQualMVA[(*iTrack)]);
+            t0safe_vec.push_back(t0Safe[*iTrack]);
+            vtsim_vec.push_back(vtsim);
+            tsim_vec.push_back(tsim);
+            tEst_vec.push_back(tEst);
+            sigmat0Safe_vec.push_back(sigmat0Safe[*iTrack]);
+            trackEta_vec.push_back((*iTrack)->eta());
+            trackPhi_vec.push_back((*iTrack)->phi());
+            meTrackZposResTot_vec.push_back(dZ);
+            simPdgId_vec.push_back((*tp_info)->pdgId());
+            isPi_vec.push_back(isPi);
+            isP_vec.push_back(isP);
+            isK_vec.push_back(isK);
+            noPID_vec.push_back(noPID);
+            noPIDtype_vec.push_back(noPIDtype);
+            xsim_vec.push_back(xsim);
+            ysim_vec.push_back(ysim);
+            zsim_vec.push_back(zsim);
+            xPCA_vec.push_back(xPCA);
+            yPCA_vec.push_back(yPCA);
+            zPCA_vec.push_back(zPCA);
+            dZ_vec.push_back(dZ);
+            d3D_vec.push_back(d3D);
+            vtx_tError_vec.push_back(vertex->tError());
+            vtx_t_vec.push_back(vertex->t());
+            trackW_vec.push_back(vertex->trackWeight(*iTrack));
+            sigmat0_vec.push_back(sigmat0[*iTrack]);
+
+
+          }
+          
 
           // matched TP equal to any TP of a given sim vertex
           if (tp_info != nullptr && matchCategory == 0) {
@@ -2205,6 +2520,12 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             double xPCA = (*iTrack)->vx();
             double yPCA = (*iTrack)->vy();
             double zPCA = (*iTrack)->vz();
+            
+            /*
+            std::cout << "xsim, ysim, zsim, xPCA, yPCA, zPCA" << endl;
+            std::cout << xsim << " " << ysim << " " << zsim << " " << xPCA << " " << yPCA << " " << zPCA << endl;
+            std::cout << "pt " << (*iTrack)->pt() << endl;
+            */
 
             double dZ = zPCA - zsim;
             double d3D = std::sqrt((xPCA - xsim) * (xPCA - xsim) + (yPCA - ysim) * (yPCA - ysim) + dZ * dZ);
@@ -2227,6 +2548,11 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
 
             if (sigmat0Safe[*iTrack] == -1)
               continue;
+            
+                        
+            unsigned int noPIDtype = 0;
+            bool noPID = false, isPi = false, isK = false, isP = false;
+            isParticle(*iTrack, sigmat0, sigmat0Safe, probPi, probK, probP, noPIDtype, noPID, isPi, isK, isP);
 
             if (selectedLVMatching && selectRecoTrk && selectTP) {
               meTrackMatchedTPResTot_->Fill(t0Safe[*iTrack] - vtsim);
@@ -2236,9 +2562,9 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
               }
               meTrackMatchedTPEffEtaMtd_->Fill(std::abs((*iTrack)->eta()));
 
-              unsigned int noPIDtype = 0;
-              bool noPID = false, isPi = false, isK = false, isP = false;
-              isParticle(*iTrack, sigmat0, sigmat0Safe, probPi, probK, probP, noPIDtype, noPID, isPi, isK, isP);
+              //unsigned int noPIDtype = 0;
+              //bool noPID = false, isPi = false, isK = false, isP = false;
+              //isParticle(*iTrack, sigmat0, sigmat0Safe, probPi, probK, probP, noPIDtype, noPID, isPi, isK, isP);
 
               if ((isPi && std::abs(tMtd[*iTrack] - tofPi[*iTrack] - t0Pid[*iTrack]) > tol_) ||
                   (isK && std::abs(tMtd[*iTrack] - tofK[*iTrack] - t0Pid[*iTrack]) > tol_) ||
@@ -2351,8 +2677,69 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
                 }
               }
             }
+            /*
+            if (noPIDtype==1){
+              printMatchedRecoTrackInfo(*vertex, *iTrack, *tp_info, matchCategory);
+              std::cout << "noPIDtype: " << noPIDtype <<" vertex t:  "<<vertex->t() << "vertex tError:" <<vertex->tError()<<endl;
+            } */
+            
             meTrackResTot_->Fill(t0Safe[*iTrack] - tsim);
+            pathlength_vec.push_back(pathLength[*iTrack]);
+            mass_vec.push_back(mass);
             meTrackPullTot_->Fill((t0Safe[*iTrack] - tsim) / sigmat0Safe[*iTrack]);
+            matchCategory_vec.push_back(matchCategory);
+            selectedLVMatching_vec.push_back(selectedLVMatching);
+            selectedLV_vec.push_back(selectedLV);
+            selectRecoTrk_vec.push_back(selectRecoTrk);
+            selectTP_vec.push_back(selectTP);
+            meTrackResTot_vec.push_back(t0Safe[*iTrack] - tsim);
+            meTrackPullTot_vec.push_back((t0Safe[*iTrack] - tsim) / sigmat0Safe[*iTrack]);
+            recoP_vec.push_back((*iTrack)->p());
+            recoPt_vec.push_back((*iTrack)->pt());
+            mtdQualMVA_vec.push_back(mtdQualMVA[(*iTrack)]);
+            t0safe_vec.push_back(t0Safe[*iTrack]);
+            vtsim_vec.push_back(vtsim);
+            tsim_vec.push_back(tsim);
+            tEst_vec.push_back(tEst);
+            sigmat0Safe_vec.push_back(sigmat0Safe[*iTrack]);
+            trackEta_vec.push_back((*iTrack)->eta());
+            trackPhi_vec.push_back((*iTrack)->phi());
+            tpStatus_vec.push_back((*tp_info)->status());
+            simEta_vec.push_back((*tp_info)->eta());
+            simPhi_vec.push_back((*tp_info)->phi());
+            simPt_vec.push_back((*tp_info)->pt());
+            meTrackZposResTot_vec.push_back(dZ);
+            simPdgId_vec.push_back((*tp_info)->pdgId());
+            isPi_vec.push_back(isPi);
+            isP_vec.push_back(isP);
+            isK_vec.push_back(isK);
+            noPID_vec.push_back(noPID);
+            //selectedLVMatching_vec.clear();
+	    //selectRecoTrk_vec.clear();
+	    //selectTP_vec.clear();
+            //probPi_vec.push_back(probPi);
+            //probK_vec.push_back(probK);
+            //probP_vec.push_back(probP);
+            noPIDtype_vec.push_back(noPIDtype);
+            xsim_vec.push_back(xsim);
+            ysim_vec.push_back(ysim);
+            zsim_vec.push_back(zsim);
+            xPCA_vec.push_back(xPCA);
+            yPCA_vec.push_back(yPCA);
+            zPCA_vec.push_back(zPCA);
+            dZ_vec.push_back(dZ);
+            d3D_vec.push_back(d3D);
+            parentPDGID_vec.push_back(-9999);
+            vtx_tError_vec.push_back(vertex->tError());
+            vtx_t_vec.push_back(vertex->t());
+            trackW_vec.push_back(vertex->trackWeight(*iTrack));
+            sigmat0_vec.push_back(sigmat0[*iTrack]);
+
+
+            
+
+
+
             meTrackZposResTot_->Fill(dZ);
             if ((*iTrack)->p() <= 2) {
               meTrackResLowPTot_->Fill(t0Safe[*iTrack] - tsim);
@@ -2452,6 +2839,19 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
           }  // if tp_info != nullptr && MatchCategory == 0
         }  // loop on reco tracks
         if (selectedVtxMatching) {
+          nt_vec.push_back(nt);
+          PUnt_vec.push_back(PUnt);
+          Fakent_vec.push_back(Fakent);
+          sumWnt_vec.push_back(sumWnt);
+          sumWos_vec.push_back(sumWos);
+          sumPt_vec.push_back(sumPt);
+          PUsumWnt_vec.push_back(PUsumWnt);
+          PUsumWos_vec.push_back(PUsumWos);
+          SecsumWos_vec.push_back(SecsumWos);
+          FakesumWos_vec.push_back(FakesumWos);
+          PUsumPt_vec.push_back(PUsumPt);
+
+
           meVtxTrackMult_->Fill(log10(nt));
           mePUTrackRelMult_->Fill(static_cast<double>(PUnt) / nt);
           meFakeTrackRelMult_->Fill(static_cast<double>(Fakent) / nt);
@@ -2605,6 +3005,9 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
   for (unsigned int ir = 0; ir < recopv.size(); ir++) {
     if (recopv.at(ir).ndof > selNdof_) {
       meRecPVZ_->Fill(recopv.at(ir).z);
+      singlevtx_t_vec.push_back(recopv.at(ir).recVtx->t());
+      singlevtx_tError_vec.push_back(recopv.at(ir).recVtx->tError());
+          
       if (recopv.at(ir).recVtx->tError() > 0.) {
         meRecPVT_->Fill(recopv.at(ir).recVtx->t());
       }
@@ -2744,6 +3147,8 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
       }
     }  // ndof
   }
+dump_tree->Fill();
+ClearVectors();
 
 }  // end of analyze
 
@@ -2775,7 +3180,7 @@ void Primary4DVertexValidation::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("probK", edm::InputTag("tofPID:probK"));
   desc.add<edm::InputTag>("probP", edm::InputTag("tofPID:probP"));
   desc.add<bool>("useOnlyChargedTracks", true);
-  desc.addUntracked<bool>("optionalPlots", false);
+  desc.addUntracked<bool>("optionalPlots", true);
   desc.add<bool>("use3dNoTime", false);
   desc.add<double>("trackweightTh", 0.5);
   desc.add<double>("mvaTh", 0.8);
@@ -2799,7 +3204,8 @@ void Primary4DVertexValidation::printMatchedRecoTrackInfo(const reco::Vertex& vt
       strTrk = "PU_RecoTrk:";
       break;
   }
-  LogTrace("Primary4DVertexValidation") << strTrk << " w =" << std::setw(6) << std::setprecision(2)
+  //LogTrace("Primary4DVertexValidation") 
+  std::cout << strTrk << " w =" << std::setw(6) << std::setprecision(2)
                                         << vtx.trackWeight(trk) << " pt =" << std::setw(6) << std::setprecision(2)
                                         << trk->pt() << " eta =" << std::setw(6) << std::setprecision(2) << trk->eta()
                                         << "  MatchedTP: Pt =" << std::setw(6) << std::setprecision(2) << tp->pt()
