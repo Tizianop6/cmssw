@@ -5,12 +5,14 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include <CLHEP/Units/GlobalPhysicalConstants.h>
 #include <CLHEP/Units/SystemOfUnits.h>
@@ -52,6 +54,7 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> sigmatofkToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> sigmatofpToken_;
   edm::EDGetTokenT<reco::VertexCollection> vtxsToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPiToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> trackMTDTimeQualityToken_;
   const double vtxMaxSigmaT_;
   const double maxDz_;
@@ -91,6 +94,9 @@ TOFPIDProducer::TOFPIDProducer(const ParameterSet& iConfig)
       minTrackTimeQuality_(iConfig.getParameter<double>("minTrackTimeQuality")),
       MVASel_(iConfig.getParameter<bool>("MVASel")),
       vertexReassignment_(iConfig.getParameter<bool>("vertexReassignment")) {
+  if (!vertexReassignment_) {
+    probPiToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPiSrc"));
+  }
   produces<edm::ValueMap<float>>(t0Name);
   produces<edm::ValueMap<float>>(sigmat0Name);
   produces<edm::ValueMap<float>>(t0safeName);
@@ -126,6 +132,7 @@ void TOFPIDProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
       ->setComment("Input primary vertex collection");
   desc.add<edm::InputTag>("trackMTDTimeQualityVMapTag", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"))
       ->setComment("Track MVA quality value");
+  desc.add<edm::InputTag>("probPiSrc", edm::InputTag("tofPID:probPi"));
   desc.add<double>("vtxMaxSigmaT", 0.025)
       ->setComment("Maximum primary vertex time uncertainty for use in particle id [ns]");
   desc.add<double>("maxDz", 0.1)
@@ -142,7 +149,7 @@ void TOFPIDProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<double>("minTrackTimeQuality", 0.8)->setComment("Minimum MVA Quality selection on tracks");
   desc.add<bool>("MVASel", false)->setComment("Use MVA Quality selection");
   desc.add<bool>("vertexReassignment", true)->setComment("Track-vertex reassignment");
-
+  
   descriptions.add("tofPIDProducer", desc);
 }
 
@@ -166,6 +173,7 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
   const auto& t0In = ev.get(t0Token_);
 
   const auto& tmtdIn = ev.get(tmtdToken_);
+  //const auto& probPi_in = ev.get(probPiToken_);
 
   const auto& sigmat0In = ev.get(sigmat0Token_);
 
@@ -214,11 +222,25 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
     float trackMVAQual = trackMVAQualIn[trackref];
 
     if (sigmat0 > 0. && (!MVASel_ || (MVASel_ && trackMVAQual >= minTrackTimeQuality_))) {
+
       double rsigmazsq = 1. / track.dzError() / track.dzError();
       std::array<double, 3> rsigmat = {{1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi),
                                         1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk),
                                         1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp)}};
 
+
+
+      std::cout << "sigmat0safe = " << sigmat0safe << std::endl << "sigmat0 = " << sigmat0 <<std::endl<<" pi: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi) << std::endl << " K: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk) << std::endl << " P: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp) << std::endl;
+      std::cout << "rsigmat[0] = " << rsigmat[0] << std::endl << "rsigmat[1] = " << rsigmat[1] << std::endl << "rsigmat[2] = " << rsigmat[2] << std::endl << std::endl;
+      //std::cout << "probpi_in" << probPi_in[trackref] << std::endl;
+      if (sigmat0safe == 1./rsigmat[0]){
+        std::cout << "pi sigmat0safe is 1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi)" << std::endl;
+      }
+      if (sigmat0safe == 1./rsigmat[1]){
+        std::cout << "K sigmat0safe is 1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk)" << std::endl;
+      }
+      
+      
       //find associated vertex
       int vtxidx = -1;
       int vtxidxmindz = -1;
@@ -357,8 +379,31 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
           t0 = t0_best;
         }
       }
+      if(!vertexReassignment_ && ( prob_pi == -1 || edm::isNotFinite(prob_pi) || (prob_pi==1 && prob_k == 0 && prob_p == 0 && sigmat0 < sigmat0safe)) && sigmat0safe!=-1. ){
+        /*
+        no_PIDtype_prec = 0;
+        no_PID = false;
+        is_Pi = false;
+        is_K = false;
+        is_P = false;
+        if (probPi[recoTrack] == -1) {
+          no_PIDtype_prec = 1;
+        } else if (edm::isNotFinite(probPi[recoTrack])) {
+          no_PIDtype_prec = 2;
+        } else if (probPi[recoTrack] == 1 && probK[recoTrack] == 0 && probP[recoTrack] == 0 &&
+                  sigmat0[recoTrack] < sigmat0Safe[recoTrack]) {
+          no_PIDtype_prec = 3;
+        }
+        no_PID = no_PIDtype > 0;
+        is_Pi = !no_PID && 1. - probPi[recoTrack] < minProbHeavy_;
+        is_K = !no_PID && !is_Pi && probK[recoTrack] > probP[recoTrack];
+        is_P = !no_PID && !is_Pi && !is_K;
+        */
+        sigmat0safe = 11. ; 
+        //sigmat0safe = 11. ;
+      } 
     }
-
+    
     t0OutRaw.push_back(t0);
     sigmat0OutRaw.push_back(sigmat0);
     t0safeOutRaw.push_back(t0safe);
