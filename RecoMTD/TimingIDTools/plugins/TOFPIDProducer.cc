@@ -5,6 +5,7 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
@@ -358,7 +359,11 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
         }
       }
     }
-
+    if(vertexReassignment_ && ( prob_pi == -1 || edm::isNotFinite(prob_pi) || (prob_pi==1 && prob_k == 0 && prob_p == 0 && sigmat0 < sigmat0safe)) ){
+      sigmat0 = 10. ; 
+      sigmat0safe = 11. ;
+    } 
+     
     t0OutRaw.push_back(t0);
     sigmat0OutRaw.push_back(sigmat0);
     t0safeOutRaw.push_back(t0safe);
