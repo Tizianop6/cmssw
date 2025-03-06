@@ -55,6 +55,8 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> sigmatofpToken_;
   edm::EDGetTokenT<reco::VertexCollection> vtxsToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> probPiToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probKToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> trackMTDTimeQualityToken_;
   const double vtxMaxSigmaT_;
   const double maxDz_;
@@ -96,6 +98,8 @@ TOFPIDProducer::TOFPIDProducer(const ParameterSet& iConfig)
       vertexReassignment_(iConfig.getParameter<bool>("vertexReassignment")) {
   if (!vertexReassignment_) {
     probPiToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPiSrc"));
+    probKToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probKSrc"));
+    probPToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPSrc"));
   }
   produces<edm::ValueMap<float>>(t0Name);
   produces<edm::ValueMap<float>>(sigmat0Name);
@@ -132,7 +136,9 @@ void TOFPIDProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
       ->setComment("Input primary vertex collection");
   desc.add<edm::InputTag>("trackMTDTimeQualityVMapTag", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"))
       ->setComment("Track MVA quality value");
-  desc.add<edm::InputTag>("probPiSrc", edm::InputTag("tofPID:probPi"));
+  desc.add<edm::InputTag>("probPiSrc", edm::InputTag("tofPID4DnoPID:probPi"))->setComment("Input ValueMap for pion prob");
+  desc.add<edm::InputTag>("probKSrc", edm::InputTag("tofPID4DnoPID:probK"))->setComment("Input ValueMap for kaon prob");
+  desc.add<edm::InputTag>("probPSrc", edm::InputTag("tofPID4DnoPID:probP"))->setComment("Input ValueMap for proton prob");
   desc.add<double>("vtxMaxSigmaT", 0.025)
       ->setComment("Maximum primary vertex time uncertainty for use in particle id [ns]");
   desc.add<double>("maxDz", 0.1)
@@ -173,7 +179,19 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
   const auto& t0In = ev.get(t0Token_);
 
   const auto& tmtdIn = ev.get(tmtdToken_);
-  //const auto& probPi_in = ev.get(probPiToken_);
+  
+  //const auto& probPi_in; 
+  //if(!vertexReassignment_) probPi_in = ev.get(probPiToken_);
+  
+  edm::Handle<edm::ValueMap<float>> probPiHandle;
+  edm::Handle<edm::ValueMap<float>> probKHandle;
+  edm::Handle<edm::ValueMap<float>> probPHandle;
+  
+  if (!vertexReassignment_) {
+  ev.getByToken(probPiToken_, probPiHandle);
+  ev.getByToken(probKToken_, probKHandle);
+  ev.getByToken(probPToken_, probPHandle);
+  }
 
   const auto& sigmat0In = ev.get(sigmat0Token_);
 
@@ -232,7 +250,12 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
 
       std::cout << "sigmat0safe = " << sigmat0safe << std::endl << "sigmat0 = " << sigmat0 <<std::endl<<" pi: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi) << std::endl << " K: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk) << std::endl << " P: "<< std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp) << std::endl;
       std::cout << "rsigmat[0] = " << rsigmat[0] << std::endl << "rsigmat[1] = " << rsigmat[1] << std::endl << "rsigmat[2] = " << rsigmat[2] << std::endl << std::endl;
-      //std::cout << "probpi_in" << probPi_in[trackref] << std::endl;
+      if (!vertexReassignment_) {
+        std::cout << "probpi_in: " << (*probPiHandle)[trackref] << std::endl;
+        std::cout << "probk_in: " << (*probKHandle)[trackref] << std::endl;
+        std::cout << "probp_in: " << (*probPHandle)[trackref] << std::endl;
+        std::cout << "sum: " << (*probPiHandle)[trackref] + (*probKHandle)[trackref] + (*probPHandle)[trackref] << std::endl;
+      }
       if (sigmat0safe == 1./rsigmat[0]){
         std::cout << "pi sigmat0safe is 1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi)" << std::endl;
       }
