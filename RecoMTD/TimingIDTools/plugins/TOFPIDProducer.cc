@@ -5,12 +5,14 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include <CLHEP/Units/GlobalPhysicalConstants.h>
 #include <CLHEP/Units/SystemOfUnits.h>
@@ -40,6 +42,9 @@ private:
   static constexpr char probPiName[] = "probPi";
   static constexpr char probKName[] = "probK";
   static constexpr char probPName[] = "probP";
+  static constexpr char probPi_firstIterationName[] = "probPifirstIteration";
+  static constexpr char probK_firstIterationName[] = "probKfirstIteration";
+  static constexpr char probP_firstIterationName[] = "probPfirstIteration";
 
   edm::EDGetTokenT<reco::TrackCollection> tracksToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> t0Token_;
@@ -52,6 +57,9 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> sigmatofkToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> sigmatofpToken_;
   edm::EDGetTokenT<reco::VertexCollection> vtxsToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPiToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probKToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> trackMTDTimeQualityToken_;
   const double vtxMaxSigmaT_;
   const double maxDz_;
@@ -91,6 +99,11 @@ TOFPIDProducer::TOFPIDProducer(const ParameterSet& iConfig)
       minTrackTimeQuality_(iConfig.getParameter<double>("minTrackTimeQuality")),
       MVASel_(iConfig.getParameter<bool>("MVASel")),
       vertexReassignment_(iConfig.getParameter<bool>("vertexReassignment")) {
+  if (!vertexReassignment_) {
+    probPiToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPiSrc"));
+    probKToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probKSrc"));
+    probPToken_=consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPSrc"));
+  }
   produces<edm::ValueMap<float>>(t0Name);
   produces<edm::ValueMap<float>>(sigmat0Name);
   produces<edm::ValueMap<float>>(t0safeName);
@@ -98,6 +111,11 @@ TOFPIDProducer::TOFPIDProducer(const ParameterSet& iConfig)
   produces<edm::ValueMap<float>>(probPiName);
   produces<edm::ValueMap<float>>(probKName);
   produces<edm::ValueMap<float>>(probPName);
+  produces<edm::ValueMap<float>>(probPi_firstIterationName);
+  produces<edm::ValueMap<float>>(probK_firstIterationName);
+  produces<edm::ValueMap<float>>(probP_firstIterationName);
+  
+
 }
 
 // Configuration descriptions
@@ -126,6 +144,9 @@ void TOFPIDProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
       ->setComment("Input primary vertex collection");
   desc.add<edm::InputTag>("trackMTDTimeQualityVMapTag", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"))
       ->setComment("Track MVA quality value");
+  desc.add<edm::InputTag>("probPiSrc", edm::InputTag("tofPID4DnoPID:probPi"))->setComment("Input ValueMap for pion prob");
+  desc.add<edm::InputTag>("probKSrc", edm::InputTag("tofPID4DnoPID:probK"))->setComment("Input ValueMap for kaon prob");
+  desc.add<edm::InputTag>("probPSrc", edm::InputTag("tofPID4DnoPID:probP"))->setComment("Input ValueMap for proton prob");
   desc.add<double>("vtxMaxSigmaT", 0.025)
       ->setComment("Maximum primary vertex time uncertainty for use in particle id [ns]");
   desc.add<double>("maxDz", 0.1)
@@ -142,7 +163,7 @@ void TOFPIDProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<double>("minTrackTimeQuality", 0.8)->setComment("Minimum MVA Quality selection on tracks");
   desc.add<bool>("MVASel", false)->setComment("Use MVA Quality selection");
   desc.add<bool>("vertexReassignment", true)->setComment("Track-vertex reassignment");
-
+  
   descriptions.add("tofPIDProducer", desc);
 }
 
@@ -166,6 +187,19 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
   const auto& t0In = ev.get(t0Token_);
 
   const auto& tmtdIn = ev.get(tmtdToken_);
+  
+  //const auto& probPi_in; 
+  //if(!vertexReassignment_) probPi_in = ev.get(probPiToken_);
+  
+  edm::Handle<edm::ValueMap<float>> probPiHandle;
+  edm::Handle<edm::ValueMap<float>> probKHandle;
+  edm::Handle<edm::ValueMap<float>> probPHandle;
+  
+  if (!vertexReassignment_) {
+  ev.getByToken(probPiToken_, probPiHandle);
+  ev.getByToken(probKToken_, probKHandle);
+  ev.getByToken(probPToken_, probPHandle);
+  }
 
   const auto& sigmat0In = ev.get(sigmat0Token_);
 
@@ -193,6 +227,10 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
   std::vector<float> probPiOutRaw;
   std::vector<float> probKOutRaw;
   std::vector<float> probPOutRaw;
+  std::vector<float> probPiOutRaw_firstIteration;
+  std::vector<float> probKOutRaw_firstIteration;
+  std::vector<float> probPOutRaw_firstIteration;
+  
 
   //Do work here
   for (unsigned int itrack = 0; itrack < tracks.size(); ++itrack) {
@@ -210,15 +248,26 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
     float prob_pi = -1.;
     float prob_k = -1.;
     float prob_p = -1.;
+    float prob_pi_firstIteration_ = -1.;
+    float prob_k_firstIteration_ = -1.;
+    float prob_p_firstIteration_ = -1.;
+    if (!vertexReassignment_) {
+      prob_pi_firstIteration_= (*probPiHandle)[trackref];
+      prob_k_firstIteration_= (*probKHandle)[trackref];
+      prob_p_firstIteration_= (*probPHandle)[trackref];
+    }
 
     float trackMVAQual = trackMVAQualIn[trackref];
 
     if (sigmat0 > 0. && (!MVASel_ || (MVASel_ && trackMVAQual >= minTrackTimeQuality_))) {
+
       double rsigmazsq = 1. / track.dzError() / track.dzError();
       std::array<double, 3> rsigmat = {{1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi),
                                         1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk),
                                         1. / std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp)}};
 
+
+      
       //find associated vertex
       int vtxidx = -1;
       int vtxidxmindz = -1;
@@ -356,9 +405,18 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
         if (prob_heavy > minProbHeavy_) {
           t0 = t0_best;
         }
-      }
+      }  
     }
-
+    
+    if (!vertexReassignment_) {
+      probPiOutRaw_firstIteration.push_back(prob_pi_firstIteration_);
+      probKOutRaw_firstIteration.push_back(prob_k_firstIteration_);
+      probPOutRaw_firstIteration.push_back(prob_p_firstIteration_);
+    }else{
+      probPiOutRaw_firstIteration.push_back(0.);
+      probKOutRaw_firstIteration.push_back(0.);
+      probPOutRaw_firstIteration.push_back(0.);  
+    }
     t0OutRaw.push_back(t0);
     sigmat0OutRaw.push_back(sigmat0);
     t0safeOutRaw.push_back(t0safe);
@@ -366,6 +424,7 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
     probPiOutRaw.push_back(prob_pi);
     probKOutRaw.push_back(prob_k);
     probPOutRaw.push_back(prob_p);
+    
   }
 
   fillValueMap(ev, tracksH, t0OutRaw, t0Name);
@@ -375,6 +434,10 @@ void TOFPIDProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
   fillValueMap(ev, tracksH, probPiOutRaw, probPiName);
   fillValueMap(ev, tracksH, probKOutRaw, probKName);
   fillValueMap(ev, tracksH, probPOutRaw, probPName);
+  fillValueMap(ev, tracksH, probPiOutRaw_firstIteration, probPi_firstIterationName);
+  fillValueMap(ev, tracksH, probKOutRaw_firstIteration, probK_firstIterationName);
+  fillValueMap(ev, tracksH, probPOutRaw_firstIteration, probP_firstIterationName);
+
 }
 
 //define this as a plug-in
