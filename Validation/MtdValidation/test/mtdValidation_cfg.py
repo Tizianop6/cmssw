@@ -32,7 +32,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+        '/store/relval/CMSSW_14_2_0_pre3/RelValTTbar_14TeV/GEN-SIM-RECO/PU_141X_mcRun4_realistic_v3_STD_2026D110_PU-v1/2590000/0845550a-8378-4257-b457-e6923f909ad0.root'
     )
 )
 
