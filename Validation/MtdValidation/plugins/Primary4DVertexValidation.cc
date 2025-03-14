@@ -285,6 +285,8 @@ private:
   std::vector<float> pathlength_vec;
   std::vector<float> mass_vec;
   std::vector<float> sigmat0_vec;
+  std::vector<float> ndof_vec;
+  std::vector<float> outermostHitPosition_vec;
 
 
 
@@ -408,6 +410,7 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> probPiToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> probKToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> probPToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> outermostHitPositionToken_;
   edm::ESGetToken<HepPDT::ParticleDataTable, edm::DefaultRecord> pdtToken_;
 
   // histogram declaration
@@ -641,6 +644,7 @@ Primary4DVertexValidation::Primary4DVertexValidation(const edm::ParameterSet& iC
   probPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPi"));
   probKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probK"));
   probPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probP"));
+  outermostHitPositionToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("outermostHitPosition"));
   MakeBranches();
 }
 
@@ -706,6 +710,8 @@ void Primary4DVertexValidation::MakeBranches() {
   dump_tree->Branch("pathlength",&pathlength_vec);
   dump_tree->Branch("mass",&mass_vec);
   dump_tree->Branch("sigmat0",&sigmat0_vec);
+  dump_tree->Branch("ndofTrack", &ndof_vec);
+  dump_tree->Branch("outermostHitPosition", &outermostHitPosition_vec);
 
 
 
@@ -775,6 +781,9 @@ void Primary4DVertexValidation::ClearVectors() {
   pathlength_vec.clear();
   mass_vec.clear();
   sigmat0_vec.clear();
+  ndof_vec.clear();
+  outermostHitPosition_vec.clear();
+
 
 
             //probPi_vec.push_back(probPi);
@@ -2252,7 +2261,10 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
   iEvent.getByToken(RecBeamSpotToken_, BeamSpotH);
   if (!BeamSpotH.isValid())
     edm::LogWarning("Primary4DVertexValidation") << "BeamSpotH is not valid";
-
+  edm::Handle<reco::TrackCollection> RecTrackH;
+  iEvent.getByToken(RecTrackToken_, RecTrackH);
+  if (!RecTrackH.isValid())
+    edm::LogWarning("Primary4DVertexValidation") << "RecTrackH is not valid";
   std::vector<simPrimaryVertex> simpv;  // a list of simulated primary MC vertices
   simpv = getSimPVs(TVCollectionH);
   // this bool check if first vertex in that with highest pT
@@ -2285,6 +2297,7 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
   const auto& probK = iEvent.get(probKToken_);
   const auto& probP = iEvent.get(probPToken_);
   const auto& fPDGTable = iSetup.getHandle(pdtToken_);
+  const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
 
   // I have simPV and recoPV collections
   matchReco2Sim(recopv, simpv, sigmat0Safe, mtdQualMVA, BeamSpotH);
@@ -2502,6 +2515,10 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             vtx_t_vec.push_back(vertex->t());
             trackW_vec.push_back(vertex->trackWeight(*iTrack));
             sigmat0_vec.push_back(sigmat0[*iTrack]);
+            outermostHitPosition_vec.push_back(outermostHitPosition[*iTrack]);
+            ndof_vec.push_back((*RecTrackH)[iTrack->key()].ndof());
+      
+
 
 
           }
@@ -2734,8 +2751,9 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             vtx_t_vec.push_back(vertex->t());
             trackW_vec.push_back(vertex->trackWeight(*iTrack));
             sigmat0_vec.push_back(sigmat0[*iTrack]);
-
-
+            outermostHitPosition_vec.push_back(outermostHitPosition[*iTrack]);
+            ndof_vec.push_back((*RecTrackH)[iTrack->key()].ndof());
+      
             
 
 
@@ -3179,6 +3197,11 @@ void Primary4DVertexValidation::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("probPi", edm::InputTag("tofPID:probPi"));
   desc.add<edm::InputTag>("probK", edm::InputTag("tofPID:probK"));
   desc.add<edm::InputTag>("probP", edm::InputTag("tofPID:probP"));
+  desc.add<edm::InputTag>("outermostHitPosition", edm::InputTag("trackExtenderWithMTD:generalTrackOutermostHitPosition"));
+  
+  
+
+  
   desc.add<bool>("useOnlyChargedTracks", true);
   desc.addUntracked<bool>("optionalPlots", true);
   desc.add<bool>("use3dNoTime", false);
