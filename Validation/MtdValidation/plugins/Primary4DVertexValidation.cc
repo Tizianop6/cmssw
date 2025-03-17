@@ -285,8 +285,9 @@ private:
   std::vector<float> pathlength_vec;
   std::vector<float> mass_vec;
   std::vector<float> sigmat0_vec;
-  std::vector<float> ndof_vec;
+  std::vector<int> ndof_vec;
   std::vector<float> outermostHitPosition_vec;
+  std::vector<float> tMTD_vec;
 
 
 
@@ -712,7 +713,7 @@ void Primary4DVertexValidation::MakeBranches() {
   dump_tree->Branch("sigmat0",&sigmat0_vec);
   dump_tree->Branch("ndofTrack", &ndof_vec);
   dump_tree->Branch("outermostHitPosition", &outermostHitPosition_vec);
-
+  dump_tree->Branch("tMTD", &tMTD_vec);
 
 
  
@@ -783,6 +784,7 @@ void Primary4DVertexValidation::ClearVectors() {
   sigmat0_vec.clear();
   ndof_vec.clear();
   outermostHitPosition_vec.clear();
+  tMTD_vec.clear();
 
 
 
@@ -2517,7 +2519,7 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             sigmat0_vec.push_back(sigmat0[*iTrack]);
             outermostHitPosition_vec.push_back(outermostHitPosition[*iTrack]);
             ndof_vec.push_back((*RecTrackH)[iTrack->key()].ndof());
-      
+            tMTD_vec.push_back(tMtd[*iTrack]);
 
 
 
@@ -2753,8 +2755,9 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
             sigmat0_vec.push_back(sigmat0[*iTrack]);
             outermostHitPosition_vec.push_back(outermostHitPosition[*iTrack]);
             ndof_vec.push_back((*RecTrackH)[iTrack->key()].ndof());
+            tMTD_vec.push_back(tMtd[*iTrack]);
       
-            
+            //std::cout << "Ndof: " <<(*RecTrackH)[iTrack->key()].ndof() << std::endl;
 
 
 
