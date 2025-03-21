@@ -60,6 +60,8 @@
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
+#define EDM_ML_DEBUG
+
 using namespace std;
 using namespace edm;
 using namespace reco;
@@ -1478,7 +1480,10 @@ reco::Track TrackExtenderWithMTDT<TrackCollection>::buildTrack(const reco::Track
       //here add the PID uncertainty for later use in the 1st step of 4D vtx reconstruction
       TrackTofPidInfo tofInfo = computeTrackTofPidInfo(
           p.mag2(), pathlength, trs, thit, thiterror, 0.f, 0.f, true, TofCalc::kSegm, SigmaTofCalc::kCost);
-
+      if (pathlength < 115){
+        LogTrace("TrackExtenderWithMTD") << "TrackExtenderWithMTD: pathlength " << pathlength << " < 115 cm";
+        std::cout << "TrackExtenderWithMTD: ndof " << ndof << std::endl;
+      }
       pathLengthOut = pathlength;  // set path length if we've got a timing hit
       tmtdOut = thit;
       sigmatmtdOut = thiterror;
