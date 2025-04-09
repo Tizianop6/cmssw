@@ -522,7 +522,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
 
 void MtdTracksValidation::MakeBranches(){
   edm::Service<TFileService> fs;
-  dump_tree = fs->make<TTree>( "tree", "tree" );
+  dump_tree = fs->make<TTree>( "treeTrackValidation", "treeTrackValidation1" );
   dump_tree->Branch("trackPulls",&TrackPull_vec);
   dump_tree->Branch("trackRes",&TrackRes_vec);
   dump_tree->Branch("recoP",&recoP_vec);
