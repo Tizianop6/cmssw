@@ -104,7 +104,7 @@ private:
   const bool trkRecSel(const reco::TrackBase&);
   const bool trkRecSelLowPt(const reco::TrackBase&);
   const edm::Ref<std::vector<TrackingParticle>>* getMatchedTP(const reco::TrackBaseRef&);
-  void isParticle(const reco::TrackBaseRef&,
+  void isParticle(const reco::TrackRef&,
     const edm::ValueMap<float>&,
     const edm::ValueMap<float>&,
     const edm::ValueMap<float>&,
@@ -537,12 +537,13 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("t0safe",&t0safe_vec);
   dump_tree->Branch("sigmat0Safe",&sigmat0Safe_vec);
   dump_tree->Branch("simPdgId",&simPdgId_vec);
-  dump_tree->Branch("isPi",&isPi_vec);
+  /*dump_tree->Branch("isPi",&isPi_vec);
   dump_tree->Branch("isP",&isP_vec);
   dump_tree->Branch("isK",&isK_vec);
   dump_tree->Branch("noPID",&noPID_vec);
-  //dump_tree->Branch("matchCategory",&matchCategory_vec);
   dump_tree->Branch("noPIDtype",&noPIDtype_vec);
+  */
+  //dump_tree->Branch("matchCategory",&matchCategory_vec);
   dump_tree->Branch("xsim",&xsim_vec);
   dump_tree->Branch("ysim",&ysim_vec);
   dump_tree->Branch("zsim",&zsim_vec); 
@@ -606,6 +607,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const auto& trackAssoc = iEvent.get(trackAssocToken_);
   const auto& pathLength = iEvent.get(pathLengthToken_);
   const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
+  const auto& probPi = iEvent.get(probPiToken_);
+  const auto& probK = iEvent.get(probKToken_);
+  const auto& probP = iEvent.get(probPToken_);
 
   auto recoToSimH = makeValid(iEvent.getHandle(recoToSimAssociationToken_));
   r2s_ = recoToSimH.product();
@@ -882,10 +886,26 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         recoPt_vec.push_back(trackGen.pt());
         recoPhi_vec.push_back(trackGen.phi());
         recoEta_vec.push_back(trackGen.eta());
+        xsim_vec.push_back((*tp_info)->parentVertex()->position().x() * simUnit_);
+        ysim_vec.push_back((*tp_info)->parentVertex()->position().y() * simUnit_);
+        zsim_vec.push_back((*tp_info)->parentVertex()->position().z() * simUnit_);
+        xPCA_vec.push_back((*trackref).vx());
+        yPCA_vec.push_back((*trackref).vy());
+        zPCA_vec.push_back((*trackref).vz());
         outermostHitPosition_vec.push_back(outermostHitPosition[trackref]);
         mtdQualMVA_vec.push_back(mtdQualMVA[trackref]);
         isBTL_vec.push_back(isBTL);
         isETL_vec.push_back(isETL);
+        /*        // ==  PID
+        unsigned int no_PIDtype = 0;
+        bool no_PID, is_Pi, is_K, is_P;
+        isParticle(trackref, Sigmat0Src[trackref], Sigmat0Safe[trackref], probPi, probK, probP, no_PIDtype, no_PID, is_Pi, is_K, is_P);
+        isPi_vec.push_back(is_Pi);
+        isP_vec.push_back(is_P);
+        isK_vec.push_back(is_K);
+        noPIDtype_vec.push_back(no_PIDtype);
+        noPID_vec.push_back(no_PID);*/
+        
         
 
         // ==  MC truth matching
@@ -2397,7 +2417,7 @@ void MtdTracksValidation::fillTrackClusterMatchingHistograms(MonitorElement* me1
 }
 
 
-void MtdTracksValidation::isParticle(const reco::TrackBaseRef& recoTrack,
+void MtdTracksValidation::isParticle(const reco::TrackRef& recoTrack,
   const edm::ValueMap<float>& sigmat0,
   const edm::ValueMap<float>& sigmat0Safe,
   const edm::ValueMap<float>& probPi,
