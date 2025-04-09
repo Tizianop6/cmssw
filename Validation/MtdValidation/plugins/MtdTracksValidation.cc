@@ -6,6 +6,15 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 
+#include "FWCore/Utilities/interface/isFinite.h"
+
+// TFileService
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "TTree.h"
+#include "TFile.h"
+
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 #include "DQMServices/Core/interface/DQMStore.h"
 
@@ -79,6 +88,8 @@ public:
   ~MtdTracksValidation() override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  void ClearVectors();
+  void MakeBranches();
 
 private:
   void bookHistograms(DQMStore::IBooker&, edm::Run const&, edm::EventSetup const&) override;
@@ -93,6 +104,18 @@ private:
   const bool trkRecSel(const reco::TrackBase&);
   const bool trkRecSelLowPt(const reco::TrackBase&);
   const edm::Ref<std::vector<TrackingParticle>>* getMatchedTP(const reco::TrackBaseRef&);
+  void isParticle(const reco::TrackBaseRef&,
+    const edm::ValueMap<float>&,
+    const edm::ValueMap<float>&,
+    const edm::ValueMap<float>&,
+    const edm::ValueMap<float>&,
+    const edm::ValueMap<float>&,
+    unsigned int&,
+    bool&,
+    bool&,
+    bool&,
+    bool&);
+
 
   const unsigned long int uniqueId(const uint32_t x, const EncodedEventId& y) {
     const uint64_t a = static_cast<uint64_t>(x);
@@ -149,6 +172,9 @@ private:
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimAssociationToken_;
   edm::EDGetTokenT<reco::TPToSimCollectionMtd> tp2SimAssociationMapToken_;
   edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPiToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probKToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> probPToken_;
 
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
@@ -371,7 +397,77 @@ private:
   MonitorElement* meETLTrackMatchedTPnomtdAssocMVAQual_;
   MonitorElement* meETLTrackMatchedTPnomtdAssocTimeRes_;
   MonitorElement* meETLTrackMatchedTPnomtdAssocTimePull_;
+  TTree* dump_tree; 
+  //vectors for dump in TTree:
+
+  std::vector<float> xsim_vec;
+  std::vector<float> ysim_vec;
+  std::vector<float> zsim_vec;
+  std::vector<float> xPCA_vec;
+  std::vector<float> yPCA_vec;
+  std::vector<float> zPCA_vec;
+  std::vector<float> tsim_vec;
+  std::vector<bool> isBTL_vec;
+  std::vector<bool> isETL_vec;
+  std::vector<bool> isTPmtdDirectCorrectBTL_vec, isTPmtdOtherCorrectBTL_vec,isTPmtdDirectBTL_vec, isTPmtdOtherBTL_vec;
+  std::vector<bool> isTPmtdCorrectETLD1_vec, isTPmtdCorrectETLD2_vec;
+  std::vector<bool> ETLdisc1_vec, ETLdisc2_vec;
+  std::vector<bool> isTPmtdETLD1_vec, isTPmtdETLD2_vec;
+  std::vector<bool> trackMatchedtoTPnosimyesReco_vec;
+  std::vector<bool> trkTPSelLV_vec;
+  std::vector<float> TrackRes_vec, TrackPull_vec,sigmat0Safe_vec,t0safe_vec;
+  std::vector<float> simPt_vec, simEta_vec, simPhi_vec,simPdgId_vec;
+  std::vector<float> recoP_vec, recoPt_vec,recoPhi_vec, recoEta_vec;
+  std::vector<float> outermostHitPosition_vec,mtdQualMVA_vec;
+  std::vector<float> pathLength_vec;
+  std::vector<int> ndof_vec,noPIDtype_vec;
+  std::vector<bool> isPi_vec, isP_vec, isK_vec, noPID_vec;
+  std::vector<bool> withMTD_vec;
 };
+
+void MtdTracksValidation::ClearVectors(){
+  xsim_vec.clear();
+  ysim_vec.clear();
+  zsim_vec.clear();
+  xPCA_vec.clear();
+  yPCA_vec.clear();
+  zPCA_vec.clear();
+  isBTL_vec.clear();
+  isETL_vec.clear();
+  isTPmtdDirectCorrectBTL_vec.clear(); 
+  isTPmtdOtherCorrectBTL_vec.clear();
+  isTPmtdDirectBTL_vec.clear();
+  isTPmtdOtherBTL_vec.clear();
+  isTPmtdCorrectETLD1_vec.clear(); 
+  isTPmtdCorrectETLD2_vec.clear();
+  ETLdisc1_vec.clear();
+  ETLdisc2_vec.clear();
+  isTPmtdETLD1_vec.clear();
+  isTPmtdETLD2_vec.clear();
+  trackMatchedtoTPnosimyesReco_vec.clear();
+  trkTPSelLV_vec.clear();
+  TrackRes_vec.clear();
+  TrackPull_vec.clear();
+  sigmat0Safe_vec.clear();
+  t0safe_vec.clear();
+  simPt_vec.clear();
+  simEta_vec.clear();
+  simPhi_vec.clear();
+  simPdgId_vec.clear();
+  recoP_vec.clear(); 
+  recoPt_vec.clear();
+  recoPhi_vec.clear(); 
+  recoEta_vec.clear();
+  outermostHitPosition_vec.clear();
+  mtdQualMVA_vec.clear();
+  pathLength_vec.clear();
+  ndof_vec.clear();
+  isPi_vec.clear();
+  isP_vec.clear();
+  isK_vec.clear();
+  noPID_vec.clear();
+
+}
 
 // ------------ constructor and destructor --------------
 MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
@@ -399,6 +495,9 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTagETL"));
   trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
   pathLengthToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("pathLengthSrc"));
+  probPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPi"));
+  probKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probK"));
+  probPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probP"));
   tmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tmtd"));
   SigmatmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatmtd"));
   t0SrcToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("t0Src"));
@@ -418,6 +517,58 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   mtdlayerToken_ = esConsumes<MTDDetLayerGeometry, MTDRecoGeometryRecord>();
   magfieldToken_ = esConsumes<MagneticField, IdealMagneticFieldRecord>();
   builderToken_ = esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"));
+  MakeBranches();
+}
+
+void MtdTracksValidation::MakeBranches(){
+  edm::Service<TFileService> fs;
+  dump_tree = fs->make<TTree>( "tree", "tree" );
+  dump_tree->Branch("trackPulls",&TrackPull_vec);
+  dump_tree->Branch("trackRes",&TrackRes_vec);
+  dump_tree->Branch("recoP",&recoP_vec);
+  dump_tree->Branch("recoPt",&recoPt_vec);
+  dump_tree->Branch("trackEta",&recoEta_vec);
+  dump_tree->Branch("trackPhi",&recoPhi_vec);
+  dump_tree->Branch("simPt",&simPt_vec);
+  dump_tree->Branch("simEta",&simEta_vec);
+  dump_tree->Branch("simPhi",&simPhi_vec);
+  dump_tree->Branch("simPdgId",&simPdgId_vec);
+  dump_tree->Branch("mtdQualMVA",&mtdQualMVA_vec);
+  dump_tree->Branch("t0safe",&t0safe_vec);
+  dump_tree->Branch("sigmat0Safe",&sigmat0Safe_vec);
+  dump_tree->Branch("simPdgId",&simPdgId_vec);
+  dump_tree->Branch("isPi",&isPi_vec);
+  dump_tree->Branch("isP",&isP_vec);
+  dump_tree->Branch("isK",&isK_vec);
+  dump_tree->Branch("noPID",&noPID_vec);
+  //dump_tree->Branch("matchCategory",&matchCategory_vec);
+  dump_tree->Branch("noPIDtype",&noPIDtype_vec);
+  dump_tree->Branch("xsim",&xsim_vec);
+  dump_tree->Branch("ysim",&ysim_vec);
+  dump_tree->Branch("zsim",&zsim_vec); 
+  dump_tree->Branch("xPCA",&xPCA_vec); 
+  dump_tree->Branch("yPCA",&yPCA_vec);  
+  dump_tree->Branch("zPCA",&zPCA_vec);
+  dump_tree->Branch("tsim",&tsim_vec);
+  dump_tree->Branch("isBTL",&isBTL_vec);
+  dump_tree->Branch("isETL",&isETL_vec);
+  dump_tree->Branch("isTPmtdDirectCorrectBTL",&isTPmtdDirectCorrectBTL_vec);
+  dump_tree->Branch("isTPmtdOtherCorrectBTL",&isTPmtdOtherCorrectBTL_vec);
+  dump_tree->Branch("isTPmtdDirectBTL",&isTPmtdDirectBTL_vec);
+  dump_tree->Branch("isTPmtdOtherBTL",&isTPmtdOtherBTL_vec);
+  dump_tree->Branch("isTPmtdCorrectETLD1",&isTPmtdCorrectETLD1_vec);
+  dump_tree->Branch("isTPmtdCorrectETLD2",&isTPmtdCorrectETLD2_vec);
+  dump_tree->Branch("ETLdisc1",&ETLdisc1_vec);
+  dump_tree->Branch("ETLdisc2",&ETLdisc2_vec);
+  dump_tree->Branch("isTPmtdETLD1",&isTPmtdETLD1_vec);
+  dump_tree->Branch("isTPmtdETLD2",&isTPmtdETLD2_vec);
+  dump_tree->Branch("trackMatchedtoTPnosimyesReco",&trackMatchedtoTPnosimyesReco_vec);
+  dump_tree->Branch("trkTPSelLV",&trkTPSelLV_vec);
+  dump_tree->Branch("pathLength",&pathLength_vec);
+  dump_tree->Branch("ndof",&ndof_vec);
+  dump_tree->Branch("outermostHitPosition",&outermostHitPosition_vec);
+  
+  
 }
 
 MtdTracksValidation::~MtdTracksValidation() {}
@@ -633,6 +784,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       // == TrackingParticle based matching
       const reco::TrackBaseRef trkrefb(trackref);
       auto tp_info = getMatchedTP(trkrefb);
+      
       if (tp_info != nullptr && trkTPSelAll(**tp_info)) {
         // -- pT resolution plots
         if (optionalPlots_) {
@@ -717,6 +869,24 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           pullT = dT / Sigmat0Safe[trackref];
           hasTime = true;
         }
+        TrackRes_vec.push_back(dT);
+        TrackPull_vec.push_back(pullT);
+        sigmat0Safe_vec.push_back(Sigmat0Safe[trackref]);
+        t0safe_vec.push_back(t0Safe[trackref]);
+        trkTPSelLV_vec.push_back(trkTPSelLV(**tp_info));
+        simPt_vec.push_back((*tp_info)->pt());
+        simEta_vec.push_back((*tp_info)->eta());
+        simPhi_vec.push_back((*tp_info)->phi());
+        simPdgId_vec.push_back((*tp_info)->pdgId());
+        recoP_vec.push_back(trackGen.p());
+        recoPt_vec.push_back(trackGen.pt());
+        recoPhi_vec.push_back(trackGen.phi());
+        recoEta_vec.push_back(trackGen.eta());
+        outermostHitPosition_vec.push_back(outermostHitPosition[trackref]);
+        mtdQualMVA_vec.push_back(mtdQualMVA[trackref]);
+        isBTL_vec.push_back(isBTL);
+        isETL_vec.push_back(isETL);
+        
 
         // ==  MC truth matching
         bool isTPmtdDirectBTL = false, isTPmtdOtherBTL = false, isTPmtdDirectCorrectBTL = false,
@@ -725,7 +895,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
         auto simClustersRefsIt = tp2SimAssociationMap.find(*tp_info);
         const bool withMTD = (simClustersRefsIt != tp2SimAssociationMap.end());
-
+        withMTD_vec.push_back(withMTD);
         // If there is a mtdSimLayerCluster from the tracking particle
         if (withMTD) {
           // -- Get the refs to MtdSimLayerClusters associated to the TP
@@ -763,7 +933,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
               }
             }
           }
-
+          isTPmtdDirectBTL_vec.push_back(isTPmtdDirectBTL);
+          isTPmtdOtherBTL_vec.push_back(isTPmtdOtherBTL);
           // ==  Check if the track-cluster association is correct: Track->RecoClus->SimClus == Track->TP->SimClus
           for (const auto& recClusterRef : recoClustersRefs) {
             if (recClusterRef.isNonnull()) {
@@ -794,11 +965,21 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                         isTPmtdCorrectETLD2 = true;
                     }
                   }
-                }
+                  }
               }
             }
           }  /// end loop over reco clusters associated to this track.
-
+          
+          isTPmtdDirectCorrectBTL_vec.push_back(isTPmtdDirectCorrectBTL);
+          isTPmtdOtherCorrectBTL_vec.push_back(isTPmtdOtherCorrectBTL);
+          isTPmtdDirectBTL_vec.push_back(isTPmtdDirectBTL);
+          isTPmtdOtherBTL_vec.push_back(isTPmtdOtherBTL);
+          isTPmtdCorrectETLD1_vec.push_back(isTPmtdCorrectETLD1);
+          isTPmtdCorrectETLD2_vec.push_back(isTPmtdCorrectETLD2);
+          ETLdisc1_vec.push_back(ETLdisc1);
+          ETLdisc2_vec.push_back(ETLdisc2);
+          isTPmtdETLD1_vec.push_back(isTPmtdETLD1);
+          isTPmtdETLD2_vec.push_back(isTPmtdETLD2);
           // == BTL
           if (std::abs(trackGen.eta()) < trackMaxBtlEta_) {
             // -- Track matched to TP with sim hit in MTD
@@ -982,6 +1163,18 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             }
           }  // == end ETL
         }  // --- end "withMTD"
+        else{
+          isTPmtdDirectCorrectBTL_vec.push_back(false);
+          isTPmtdOtherCorrectBTL_vec.push_back(false);
+          isTPmtdDirectBTL_vec.push_back(false);
+          isTPmtdOtherBTL_vec.push_back(false);
+          isTPmtdCorrectETLD1_vec.push_back(false);
+          isTPmtdCorrectETLD2_vec.push_back(false);
+          ETLdisc1_vec.push_back(false);
+          ETLdisc2_vec.push_back(false);
+          isTPmtdETLD1_vec.push_back(false);
+          isTPmtdETLD2_vec.push_back(false);
+        }
 
         // - Track matched to TP without sim hit in MTD, but with reco cluster associated
         // - BTL
@@ -990,6 +1183,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             meBTLTrackMatchedTPnomtdEta_->Fill(std::abs(trackGen.eta()));
             meBTLTrackMatchedTPnomtdPt_->Fill(trackGen.pt());
             if (isBTL) {
+              trackMatchedtoTPnosimyesReco_vec.push_back(true);
               fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPnomtdAssocEta_,
                                                  meBTLTrackMatchedTPnomtdAssocPt_,
                                                  meBTLTrackMatchedTPnomtdAssocMVAQual_,
@@ -1001,7 +1195,11 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                                                  dT,
                                                  pullT,
                                                  hasTime);
+            }else{
+              trackMatchedtoTPnosimyesReco_vec.push_back(false);
             }
+          }else{
+            trackMatchedtoTPnosimyesReco_vec.push_back(false);
           }
         }
         // - ETL
@@ -1009,6 +1207,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           meETLTrackMatchedTPnomtdEta_->Fill(std::abs(trackGen.eta()));
           meETLTrackMatchedTPnomtdPt_->Fill(trackGen.pt());
           if (isETL) {
+            trackMatchedtoTPnosimyesReco_vec.push_back(true);
             fillTrackClusterMatchingHistograms(meETLTrackMatchedTPnomtdAssocEta_,
                                                meETLTrackMatchedTPnomtdAssocPt_,
                                                meETLTrackMatchedTPnomtdAssocMVAQual_,
@@ -1020,7 +1219,11 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                                                dT,
                                                pullT,
                                                hasTime);
+          }else{
+            trackMatchedtoTPnosimyesReco_vec.push_back(false);
           }
+        }else{
+          trackMatchedtoTPnosimyesReco_vec.push_back(false);
         }
 
         // == Time pull and detailed extrapolation check only on tracks associated to TP from signal event
@@ -1131,6 +1334,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     }  // trkRecSelLowPt
 
   }  // RECO tracks loop
+  dump_tree->Fill();
+  ClearVectors();
 }
 
 const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Track& track,
@@ -2115,8 +2320,12 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<double>("trackMaximumBtlEta", 1.5);
   desc.add<double>("trackMinimumEtlEta", 1.6);
   desc.add<double>("trackMaximumEtlEta", 3.);
+  desc.add<edm::InputTag>("probPi", edm::InputTag("tofPID:probPi"));
+  desc.add<edm::InputTag>("probK", edm::InputTag("tofPID:probK"));
+  desc.add<edm::InputTag>("probP", edm::InputTag("tofPID:probP"));
 
   descriptions.add("mtdTracksValid", desc);
+
 }
 
 const bool MtdTracksValidation::trkTPSelLV(const TrackingParticle& tp) {
@@ -2185,6 +2394,37 @@ void MtdTracksValidation::fillTrackClusterMatchingHistograms(MonitorElement* me1
     me4->Fill(var4);
     me5->Fill(var5);
   }
+}
+
+
+void MtdTracksValidation::isParticle(const reco::TrackBaseRef& recoTrack,
+  const edm::ValueMap<float>& sigmat0,
+  const edm::ValueMap<float>& sigmat0Safe,
+  const edm::ValueMap<float>& probPi,
+  const edm::ValueMap<float>& probK,
+  const edm::ValueMap<float>& probP,
+  unsigned int& no_PIDtype,
+  bool& no_PID,
+  bool& is_Pi,
+  bool& is_K,
+  bool& is_P) {
+no_PIDtype = 0;
+no_PID = false;
+is_Pi = false;
+is_K = false;
+is_P = false;
+if (probPi[recoTrack] == -1) {
+no_PIDtype = 1;
+} else if (edm::isNotFinite(probPi[recoTrack])) {
+no_PIDtype = 2;
+} else if (probPi[recoTrack] == 1 && probK[recoTrack] == 0 && probP[recoTrack] == 0 &&
+sigmat0[recoTrack] < sigmat0Safe[recoTrack]) {
+no_PIDtype = 3;
+}
+no_PID = no_PIDtype > 0;
+is_Pi = !no_PID && 1. - probPi[recoTrack] < 0.75;
+is_K = !no_PID && !is_Pi && probK[recoTrack] > probP[recoTrack];
+is_P = !no_PID && !is_Pi && !is_K;
 }
 
 DEFINE_FWK_MODULE(MtdTracksValidation);
