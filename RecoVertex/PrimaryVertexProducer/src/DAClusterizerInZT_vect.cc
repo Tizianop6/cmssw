@@ -247,7 +247,10 @@ DAClusterizerInZT_vect::track_t DAClusterizerInZT_vect::fill(const vector<reco::
         continue;
       }
     }
-
+    if (tk.track().outerRadius()<90. && abs(tk.track().eta())<1.5) || (tk.track().outerZ()<250. && abs(tk.track().eta())>1.6 && abs(tk.track().eta())<3.0){
+      t_dt2 = 0;
+    }
+    
     if (d0CutOff_ > 0) {
       Measurement1D atIP = tk.stateAtBeamLine().transverseImpactParameter();  // error contains beamspot
       t_tkwt = 1. / (1. + local_exp(std::pow(atIP.value() / atIP.error(), 2) -

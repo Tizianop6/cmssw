@@ -105,8 +105,10 @@ bool VertexTimeAlgorithmFromTracksPID::vertexTime(float& vtxTime,
     auto const trkWeight = vtx.trackWeight(trk);
     if (trkWeight > minTrackVtxWeight_) {
       auto const trkTimeQuality = trackMTDTimeQualities_[trk.trackBaseRef()];
-
       if (trkTimeQuality >= minTrackTimeQuality_) {
+        if (trk.track().outerRadius()<90. && abs(trk.track().eta())<1.5) || (trk.track().outerZ()<250. && abs(trk.track().eta())>1.6 && abs(trk.track().eta())<3.0){
+          continue;
+        }
         auto const trkTime = trackMTDTimes_[trk.trackBaseRef()];
         auto const trkTimeError = trackMTDTimeErrors_[trk.trackBaseRef()];
 
