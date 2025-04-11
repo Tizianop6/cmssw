@@ -537,12 +537,12 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("t0safe",&t0safe_vec);
   dump_tree->Branch("sigmat0Safe",&sigmat0Safe_vec);
   dump_tree->Branch("simPdgId",&simPdgId_vec);
-  /*dump_tree->Branch("isPi",&isPi_vec);
+  dump_tree->Branch("isPi",&isPi_vec);
   dump_tree->Branch("isP",&isP_vec);
   dump_tree->Branch("isK",&isK_vec);
   dump_tree->Branch("noPID",&noPID_vec);
   dump_tree->Branch("noPIDtype",&noPIDtype_vec);
-  */
+  
   //dump_tree->Branch("matchCategory",&matchCategory_vec);
   dump_tree->Branch("xsim",&xsim_vec);
   dump_tree->Branch("ysim",&ysim_vec);
@@ -896,15 +896,17 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         mtdQualMVA_vec.push_back(mtdQualMVA[trackref]);
         isBTL_vec.push_back(isBTL);
         isETL_vec.push_back(isETL);
-        /*        // ==  PID
+        pathLength_vec.push_back(pathLength[trackref]);
+        ndof_vec.push_back(trackGen.ndof());
+                // ==  PID
         unsigned int no_PIDtype = 0;
         bool no_PID, is_Pi, is_K, is_P;
-        isParticle(trackref, Sigmat0Src[trackref], Sigmat0Safe[trackref], probPi, probK, probP, no_PIDtype, no_PID, is_Pi, is_K, is_P);
+        isParticle(trackref, Sigmat0Src, Sigmat0Safe, probPi, probK, probP, no_PIDtype, no_PID, is_Pi, is_K, is_P);
         isPi_vec.push_back(is_Pi);
         isP_vec.push_back(is_P);
         isK_vec.push_back(is_K);
         noPIDtype_vec.push_back(no_PIDtype);
-        noPID_vec.push_back(no_PID);*/
+        noPID_vec.push_back(no_PID);
         
         
 
@@ -953,8 +955,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
               }
             }
           }
-          isTPmtdDirectBTL_vec.push_back(isTPmtdDirectBTL);
-          isTPmtdOtherBTL_vec.push_back(isTPmtdOtherBTL);
           // ==  Check if the track-cluster association is correct: Track->RecoClus->SimClus == Track->TP->SimClus
           for (const auto& recClusterRef : recoClustersRefs) {
             if (recClusterRef.isNonnull()) {
