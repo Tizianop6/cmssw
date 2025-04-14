@@ -409,6 +409,8 @@ private:
   std::vector<float> tsim_vec;
   std::vector<bool> isBTL_vec;
   std::vector<bool> isETL_vec;
+  std::vector<float> outerZ_vec;
+  std::vector<float> outerR_vec;
   std::vector<bool> isTPmtdDirectCorrectBTL_vec, isTPmtdOtherCorrectBTL_vec,isTPmtdDirectBTL_vec, isTPmtdOtherBTL_vec;
   std::vector<bool> isTPmtdCorrectETLD1_vec, isTPmtdCorrectETLD2_vec;
   std::vector<bool> ETLdisc1_vec, ETLdisc2_vec;
@@ -466,6 +468,9 @@ void MtdTracksValidation::ClearVectors(){
   isP_vec.clear();
   isK_vec.clear();
   noPID_vec.clear();
+  outerZ_vec.clear();
+  outerR_vec.clear();
+  withMTD_vec.clear();
 
 }
 
@@ -568,7 +573,9 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("pathLength",&pathLength_vec);
   dump_tree->Branch("ndof",&ndof_vec);
   dump_tree->Branch("outermostHitPosition",&outermostHitPosition_vec);
-  
+  dump_tree->Branch("outerZ",&outerZ_vec);
+  dump_tree->Branch("outerR",&outerR_vec);
+  dump_tree->Branch("withMTD",&withMTD_vec);
   
 }
 
@@ -892,6 +899,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         xPCA_vec.push_back((*trackref).vx());
         yPCA_vec.push_back((*trackref).vy());
         zPCA_vec.push_back((*trackref).vz());
+        outerZ_vec.push_back((*trackref).outerZ());
+        //std::cout << "outerZ: " << (*trackref).outerZ() << std::endl;
+        outerR_vec.push_back((*trackref).outerRadius());
         outermostHitPosition_vec.push_back(outermostHitPosition[trackref]);
         mtdQualMVA_vec.push_back(mtdQualMVA[trackref]);
         isBTL_vec.push_back(isBTL);

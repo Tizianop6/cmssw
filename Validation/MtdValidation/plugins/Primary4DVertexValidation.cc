@@ -654,6 +654,17 @@ Primary4DVertexValidation::Primary4DVertexValidation(const edm::ParameterSet& iC
   probPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probPi"));
   probKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probK"));
   probPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("probP"));
+  std::string trackSelectionAlgorithm =
+      iConfig.getParameter<edm::ParameterSet>("TkFilterParameters").getParameter<std::string>("algorithm");
+  if (trackSelectionAlgorithm == "filter") {
+    theTrackFilter = new TrackFilterForPVFinding(iConfig.getParameter<edm::ParameterSet>("TkFilterParameters"));
+  } else if (trackSelectionAlgorithm == "filterWithThreshold") {
+    theTrackFilter = new HITrackFilterForPVFinding(iConfig.getParameter<edm::ParameterSet>("TkFilterParameters"));
+  } else {
+    edm::LogWarning("Primary4DVertexValidation")
+        << "unknown track selection algorithm: " + trackSelectionAlgorithm << std::endl;
+  }
+
   MakeBranches();
 }
 
