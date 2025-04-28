@@ -20,7 +20,7 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf)
     : theTTBToken(esConsumes(edm::ESInputTag("", "TransientTrackBuilder"))), theConfig(conf) {
   fVerbose = conf.getUntrackedParameter<bool>("verbose", false);
   useMVASelection_ = conf.getParameter<bool>("useMVACut");
-
+  useMVASelectionVtxTime_ = conf.getParameter<bool>("useMVAVtxTime");
   trkToken = consumes<reco::TrackCollection>(conf.getParameter<edm::InputTag>("TrackLabel"));
   bsToken = consumes<reco::BeamSpot>(conf.getParameter<edm::InputTag>("beamSpotLabel"));
   useTransientTrackTime_ = false;
@@ -116,7 +116,7 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf)
           new VertexTimeAlgorithmLegacy4D(pv_time_conf.getParameter<edm::ParameterSet>("legacy4D"), collector);
     } else if (vertexTimeAlgorithm == "fromTracksPID") {
       algorithm.pv_time_estimator = new VertexTimeAlgorithmFromTracksPID(
-          pv_time_conf.getParameter<edm::ParameterSet>("fromTracksPID"), collector);
+          pv_time_conf.getParameter<edm::ParameterSet>("fromTracksPID"), collector, useMVASelectionVtxTime_);
     } else {
       edm::LogWarning("MisConfiguration") << "unknown vertexTimeParameters.algorithm" << vertexTimeAlgorithm;
     }
@@ -456,6 +456,7 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("recoveryVtxCollection", {""});
   desc.add<bool>("useMVACut", false);
   desc.add<double>("minTrackTimeQuality", 0.8);
+  desc.add<bool>("useMVAVtxTime", true);
 
   descriptions.addWithDefaultLabel(desc);
 }

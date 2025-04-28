@@ -15,7 +15,7 @@
 #endif
 
 VertexTimeAlgorithmFromTracksPID::VertexTimeAlgorithmFromTracksPID(edm::ParameterSet const& iConfig,
-                                                                   edm::ConsumesCollector& iCC)
+                                                                   edm::ConsumesCollector& iCC, const bool useMVAVtxTime)
     : VertexTimeAlgorithmBase(iConfig, iCC),
       trackMTDTimeToken_(iCC.consumes(iConfig.getParameter<edm::InputTag>("trackMTDTimeVMapTag"))),
       trackMTDTimeErrorToken_(iCC.consumes(iConfig.getParameter<edm::InputTag>("trackMTDTimeErrorVMapTag"))),
@@ -32,7 +32,8 @@ VertexTimeAlgorithmFromTracksPID::VertexTimeAlgorithmFromTracksPID(edm::Paramete
       probKaon_(iConfig.getParameter<double>("probKaon")),
       probProton_(iConfig.getParameter<double>("probProton")),
       Tstart_(iConfig.getParameter<double>("Tstart")),
-      coolingFactor_(iConfig.getParameter<double>("coolingFactor")) {}
+      coolingFactor_(iConfig.getParameter<double>("coolingFactor")),
+      useMVAVtxTime_(useMVAVtxTime) {}
 
 void VertexTimeAlgorithmFromTracksPID::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
   VertexTimeAlgorithmBase::fillPSetDescription(iDesc);
@@ -105,8 +106,7 @@ bool VertexTimeAlgorithmFromTracksPID::vertexTime(float& vtxTime,
     auto const trkWeight = vtx.trackWeight(trk);
     if (trkWeight > minTrackVtxWeight_) {
       auto const trkTimeQuality = trackMTDTimeQualities_[trk.trackBaseRef()];
-
-      if (trkTimeQuality >= minTrackTimeQuality_) {
+      if (!useMVAVtxTime_ || (useMVAVtxTime_ && trkTimeQuality >= minTrackTimeQuality_)) {
         auto const trkTime = trackMTDTimes_[trk.trackBaseRef()];
         auto const trkTimeError = trackMTDTimeErrors_[trk.trackBaseRef()];
 

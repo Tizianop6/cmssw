@@ -9,7 +9,7 @@
 
 class VertexTimeAlgorithmFromTracksPID : public VertexTimeAlgorithmBase {
 public:
-  VertexTimeAlgorithmFromTracksPID(const edm::ParameterSet& conf, edm::ConsumesCollector& iC);
+  VertexTimeAlgorithmFromTracksPID(const edm::ParameterSet& conf, edm::ConsumesCollector& iC, bool useMVAVtxTime = true);
   ~VertexTimeAlgorithmFromTracksPID() override = default;
 
   static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
@@ -42,6 +42,7 @@ protected:
   double const probProton_;
   double const Tstart_;
   double const coolingFactor_;
+  bool const useMVAVtxTime_;
 
   edm::ValueMap<float> trackMTDTimes_;
   edm::ValueMap<float> trackMTDTimeErrors_;

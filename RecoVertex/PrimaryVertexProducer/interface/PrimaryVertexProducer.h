@@ -105,6 +105,7 @@ private:
 
   bool useTransientTrackTime_;
   bool useMVASelection_;
+  bool useMVASelectionVtxTime_;
   edm::ValueMap<float> trackMTDTimeQualities_;
   edm::ValueMap<float> trackTimes_;
   double minTrackTimeQuality_;

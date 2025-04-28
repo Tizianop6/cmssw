@@ -13,6 +13,7 @@ unsortedOfflinePrimaryVertices4D = unsortedOfflinePrimaryVertices.clone(
     TrackTimeResosLabel = cms.InputTag("trackTimeValueMapProducer","generalTracksConfigurableFlatResolutionModelResolution"),
     trackMTDTimeQualityVMapTag = cms.InputTag("mtdTrackQualityMVA:mtdQualMVA"),
     useMVACut = cms.bool(False),
+    useMVAVtxTime = cms.bool(True),
     minTrackTimeQuality = cms.double(0.8),
     vertexCollections = {0: dict(vertexTimeParameters = cms.PSet( algorithm = cms.string('fromTracksPID'))),
                          1: dict(vertexTimeParameters = cms.PSet( algorithm = cms.string('fromTracksPID')))}
