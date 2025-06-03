@@ -36,6 +36,12 @@ process.source = cms.Source("PoolSource",
     )
 )
 
+outname = "tree.root"
+process.TFileService = cms.Service("TFileService",
+                                    fileName = cms.string(outname)
+                                   )
+
+
 process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
 
