@@ -32,8 +32,6 @@
   <class name="SimClusterRefProd"/>
   <class name="SimClusterContainer"/>
 
-  <class name="std::pair<edm::RefProd<std::vector<SimCluster> >, edm::RefProd<std::vector<CaloParticle> > >"/>
-
   <class name="MtdSimCluster" ClassVersion="8">
    <version ClassVersion="8" checksum="459577301"/>
    <version ClassVersion="7" checksum="837518676"/>
