@@ -31,6 +31,11 @@ public:
     pathlengths_.emplace_back(pathlength);
   }
 
+  /** @brief add hit path length */
+  void addP(float p) {
+    ps_.emplace_back(p);
+  }
+
   /** @brief add hit with fraction */
   void addHitAndFraction(uint64_t hit, float fraction) {
     mtdHits_.emplace_back(hit);
@@ -90,6 +95,18 @@ public:
     return result;
   }
 
+    /** @brief Returns list of hit IDs and times for this SimCluster */
+    std::vector<std::pair<uint64_t, float>> hits_and_ps() const {
+      assert(mtdHits_.size() == ps_.size());
+      std::vector<std::pair<uint64_t, float>> result;
+      result.reserve(mtdHits_.size());
+      for (size_t i = 0; i < mtdHits_.size(); ++i) {
+        result.emplace_back(mtdHits_[i], ps_[i]);
+      }
+      return result;
+    }
+
+    
   /** @brief Returns list of hit IDs and times for this SimCluster */
   std::vector<std::pair<uint64_t, LocalPoint>> hits_and_positions() const {
     assert(mtdHits_.size() == times_.size());
@@ -144,6 +161,8 @@ protected:
   std::vector<uint64_t> mtdHits_;
   std::vector<float> times_;
   std::vector<float> pathlengths_;
+  std::vector<float> ps_;
+  
   std::vector<LocalPoint> positions_;
   unsigned int idOffset_{0};
 };

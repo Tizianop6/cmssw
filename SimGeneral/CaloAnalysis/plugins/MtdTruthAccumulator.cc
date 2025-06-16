@@ -89,7 +89,7 @@ private:
    * for bad modules if required */
   template <class T>
   void fillSimHits(std::vector<std::pair<uint64_t, const PSimHit *>> &returnValue,
-                   std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float>>> &simTrackDetIdMap,
+                   std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float,float>>> &simTrackDetIdMap,
                    const T &event,
                    const edm::EventSetup &setup);
 
@@ -170,7 +170,7 @@ namespace {
         MtdTruthAccumulator::OutputCollections &output,
         MtdTruthAccumulator::calo_particles &caloParticles,
         std::unordered_multimap<Barcode_t, Index_t> &simHitBarcodeToIndex,
-        std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float>>> &simTrackDetIdMap,
+        std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float,float>>> &simTrackDetIdMap,
         std::unordered_map<uint32_t, float> &vertex_time_map,
         Selector selector)
         : output_(output),
@@ -214,6 +214,9 @@ namespace {
             simcluster.addPathLength(std::get<3>(
                 simTrackDetIdMap_[simcluster.g4Tracks()[0].trackId() +
                                   offset * (static_cast<int>(PSimHit::k_tidOffset))][hit_and_energy.first]));
+          simcluster.addP(std::get<4>(
+            simTrackDetIdMap_[simcluster.g4Tracks()[0].trackId() +
+                              offset * (static_cast<int>(PSimHit::k_tidOffset))][hit_and_energy.first]));
           }
         }
       }
@@ -251,7 +254,7 @@ namespace {
     MtdTruthAccumulator::OutputCollections &output_;
     MtdTruthAccumulator::calo_particles &caloParticles_;
     std::unordered_multimap<Barcode_t, Index_t> &simHitBarcodeToIndex_;
-    std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float>>> &simTrackDetIdMap_;
+    std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float,float>>> &simTrackDetIdMap_;
     std::unordered_map<uint32_t, float> &vertex_time_map_;
     Selector selector_;
   };
@@ -421,6 +424,7 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
     auto const &hAndE = sc.hits_and_energies();
     auto const &hAndT = sc.hits_and_times();
     auto const &hAndPL = sc.hits_and_pathlengths();
+    auto const &hAndPs = sc.hits_and_ps();
     auto const &hAndP = sc.hits_and_positions();
     auto const &hAndR = sc.detIds_and_rows();
     // create a vector with the indices of the hits in the simCluster
@@ -446,6 +450,8 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       tmpLC.addHitEnergy(hAndE[ind].second);
       tmpLC.addHitTime(hAndT[ind].second);
       tmpLC.addPathLength(hAndPL[ind].second);
+      tmpLC.addP(hAndPs[ind].second);
+      
       tmpLC.addHitPosition(hAndP[ind].second);
     };
 
@@ -477,6 +483,12 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       SimLCz = 0.;
       tmpLC.addCluIndex(SC_index);
       tmpLC.computeClusterTime();
+      tmpLC.computeClusterPL();
+      tmpLC.computeClusterearliestPL();
+      tmpLC.computeClusterP();
+      tmpLC.computeClusterearliestP();
+      
+      tmpLC.computeClusterEarliestTime();
       tmpLC.setTrackIdOffset(sc.trackIdOffset());  // add trackIdoffset
       output_.pMtdSimLayerClusters->push_back(tmpLC);
       LC_indices.push_back(LC_index);
@@ -610,7 +622,7 @@ void MtdTruthAccumulator::accumulateEvent(const T &event,
   event.getByLabel(genParticleLabel_, hGenParticleIndices);
 
   std::vector<std::pair<uint64_t, const PSimHit *>> simHitPointers;
-  std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float>>> simTrackDetIdMap;
+  std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float,float>>> simTrackDetIdMap;
   fillSimHits(simHitPointers, simTrackDetIdMap, event, setup);
 
   // Clear maps from previous event fill them for this one
@@ -745,7 +757,7 @@ void MtdTruthAccumulator::accumulateEvent(const T &event,
 template <class T>
 void MtdTruthAccumulator::fillSimHits(
     std::vector<std::pair<uint64_t, const PSimHit *>> &returnValue,
-    std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float>>> &simTrackDetIdMap,
+    std::unordered_map<int, std::map<uint64_t, std::tuple<float, float, LocalPoint, float, float>>> &simTrackDetIdMap,
     const T &event,
     const edm::EventSetup &setup) {
   using namespace geant_units::operators;
@@ -800,6 +812,7 @@ void MtdTruthAccumulator::fillSimHits(
       LocalPoint posSim(xSim, ySim, zSim);
       std::get<2>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = posSim;
       std::get<3>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = convertMmToCm(simHit.pathLength());
+      std::get<4>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = simHit.pabs();
 
 #ifdef PRINT_DEBUG
       IfLogDebug(DEBUG, messageCategory_)

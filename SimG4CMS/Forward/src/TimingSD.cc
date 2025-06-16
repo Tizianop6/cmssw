@@ -1,4 +1,4 @@
-//#define EDM_ML_DEBUG
+#define EDM_ML_DEBUG
 
 ///////////////////////////////////////////////////////////////////////////////
 // File: TimingSD.cc
@@ -63,7 +63,7 @@ TimingSD::~TimingSD() {
 }
 
 void TimingSD::Initialize(G4HCofThisEvent* HCE) {
-  edm::LogVerbatim("TimingSim") << "TimingSD : Initialize called for " << GetName() << " time slice factor "
+  LogDebug("TimingSim") << "TimingSD : Initialize called for " << GetName() << " time slice factor "
                                 << timeFactor << "\n MC truth cuts in are " << energyCut / CLHEP::GeV << " GeV and "
                                 << energyHistoryCut / CLHEP::GeV << " GeV";
 
@@ -83,7 +83,7 @@ void TimingSD::setTimeFactor(double val) {
   }
   timeFactor = val;
 #ifdef EDM_ML_DEBUG
-  edm::LogVerbatim("TimingSim") << "TimingSD : for " << GetName() << " time slice factor is set to " << timeFactor;
+  LogDebug("TimingSim") << "TimingSD : for " << GetName() << " time slice factor is set to " << timeFactor;
 #endif
 }
 
@@ -95,7 +95,7 @@ void TimingSD::setCuts(double eCut, double historyCut) {
     energyHistoryCut = historyCut;
   }
 #ifdef EDM_ML_DEBUG
-  edm::LogVerbatim("TimingSim") << "TimingSD : for " << GetName() << " MC truth cuts in are " << energyCut / CLHEP::GeV
+  LogDebug("TimingSim") << "TimingSD : for " << GetName() << " MC truth cuts in are " << energyCut / CLHEP::GeV
                                 << " GeV and " << energyHistoryCut / CLHEP::GeV << " GeV";
 #endif
 }
@@ -270,7 +270,7 @@ void TimingSD::storeHit(BscG4Hit* hit) {
 void TimingSD::createNewHit(const G4Step* aStep) {
 #ifdef EDM_ML_DEBUG
   const G4VPhysicalVolume* currentPV = preStepPoint->GetPhysicalVolume();
-  edm::LogVerbatim("TimingSim") << "TimingSD CreateNewHit for " << GetName() << " PV " << currentPV->GetName()
+  LogDebug("TimingSim") << "TimingSD CreateNewHit for " << GetName() << " PV " << currentPV->GetName()
                                 << " PVid = " << currentPV->GetCopyNo() << " Unit " << unitID << "\n primary "
                                 << primaryID << " Tof(ns)= " << tof << " time slice " << tSliceID
                                 << " E(MeV)= " << incidentEnergy << " trackID " << theTrack->GetTrackID() << " "
@@ -278,9 +278,9 @@ void TimingSD::createNewHit(const G4Step* aStep) {
                                 << theTrack->GetParentID();
 
   if (theTrack->GetCreatorProcess() != nullptr) {
-    edm::LogVerbatim("TimingSim") << theTrack->GetCreatorProcess()->GetProcessName();
+    LogDebug("TimingSim") << theTrack->GetCreatorProcess()->GetProcessName();
   } else {
-    edm::LogVerbatim("TimingSim") << " is primary particle";
+    LogDebug("TimingSim") << " is primary particle";
   }
 #endif
 
@@ -319,7 +319,7 @@ void TimingSD::updateHit() {
   currentHit->addEnergyDeposit(edepositEM, edepositHAD);
 
 #ifdef EDM_ML_DEBUG
-  edm::LogVerbatim("TimingSim") << "updateHit: " << GetName() << " add eloss(GeV) " << edeposit
+  LogDebug("TimingSim") << "updateHit: " << GetName() << " add eloss(GeV) " << edeposit
                                 << "CurrentHit=" << currentHit << ", PostStepPoint= " << postStepPoint->GetPosition();
 #endif
 
@@ -336,6 +336,8 @@ void TimingSD::setToLocal(const G4StepPoint* stepPoint, const G4ThreeVector& glo
 
 void TimingSD::EndOfEvent(G4HCofThisEvent*) {
   int nhits = theHC->entries();
+  std::cout << "Entered TimingSim, nhits: "<< nhits << std::endl;
+
   if (0 == nhits) {
     return;
   }
@@ -345,11 +347,14 @@ void TimingSD::EndOfEvent(G4HCofThisEvent*) {
     Local3DPoint locEntryPoint = ConvertToLocal3DPoint(aHit->getEntryLocalP());
     Local3DPoint locExitPoint = ConvertToLocal3DPoint(aHit->getExitLocalP());
 
-#ifdef EDM_ML_DEBUG
-    edm::LogVerbatim("TimingSim") << "TimingSD: Hit for storage \n"
+    std::cout << "\nEntered TimingSim logverbatim" << std::endl;
+//#ifdef EDM_ML_DEBUG
+    //LogDebug("TimingSim") 
+    
+//#endif
+  LogDebug("TimingSim") << "TimingSD: Hit for storage \n"
                                   << *aHit << "\n Entry point: " << locEntryPoint << "\n Exit  point: " << locExitPoint;
-    edm::LogVerbatim("TimingSim") << "TimingSD: path length at hit (cm): " << aHit->getPathLenght()/CLHEP::cm;
-#endif
+  LogDebug("TimingSim")  << "TimingSD: path length at hit (cm): " << aHit->getPathLength()/CLHEP::cm<< "\n";
 
     slave->processHits(PSimHit(locEntryPoint,
                                locExitPoint,
@@ -368,7 +373,7 @@ void TimingSD::EndOfEvent(G4HCofThisEvent*) {
 
 void TimingSD::PrintAll() {
 #ifdef EDM_ML_DEBUG
-  edm::LogVerbatim("TimingSim") << "TimingSD: Collection " << theHC->GetName();
+  LogDebug("TimingSim") << "TimingSD: Collection " << theHC->GetName();
 #endif
   theHC->PrintAllHits();
 }
@@ -381,7 +386,7 @@ void TimingSD::fillHits(edm::PSimHitContainer& cc, const std::string& hname) {
 
 void TimingSD::update(const BeginOfEvent* i) {
 #ifdef EDM_ML_DEBUG
-  edm::LogVerbatim("TimingSim") << " Dispatched BeginOfEvent for " << GetName();
+  LogDebug("TimingSim") << " Dispatched BeginOfEvent for " << GetName();
 #endif
   clearHits();
 }
