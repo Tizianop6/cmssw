@@ -60,7 +60,8 @@ void MCTruthUtil::secondary(G4Track *aTrack, const G4Track &mother, int flag) {
   }
 
   // for MTD
-  if (!trkInfo->isPrimary() && !isInBTL(aTrack)) {
+  //if (!trkInfo->isPrimary() && !isInBTL(aTrack)) {
+  if (!trkInfo->storeTrack()) {
     trkInfo->setExtSecondary();
   }
   if (motherInfo->isExtSecondary()) {

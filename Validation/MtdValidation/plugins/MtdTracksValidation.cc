@@ -459,6 +459,7 @@ private:
   std::vector<float> pl_SC_ETLD1_vec, pl_SC_ETLD1_earliesthit_vec, time_SC_ETLD1_vec, time_SC_ETLD1_earliesthit_vec;
   std::vector<float> p_SC_vec, p_SC_earliesthit_vec;
   std::vector<float> p_SC_ETLD1_vec, p_SC_ETLD1_earliesthit_vec;
+  std::vector<float> n_simHits_vec;
   
 
   
@@ -569,6 +570,7 @@ void MtdTracksValidation::ClearVectors(){
   
   time_SC_ETLD1_vec.clear();
   time_SC_ETLD1_earliesthit_vec.clear();
+  n_simHits_vec.clear();
   
 
 
@@ -743,6 +745,8 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("p_SC_earliesthit",&p_SC_earliesthit_vec);
   dump_tree->Branch("p_SC_ETLD1",&p_SC_ETLD1_vec);
   dump_tree->Branch("p_SC_ETLD1_earliesthit",&p_SC_ETLD1_earliesthit_vec);
+
+  dump_tree->Branch("n_simHits",&n_simHits_vec);
   
   
 }
@@ -1196,6 +1200,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           bool earliesthit = false;
           float pl_SC, pl_SC_earliesthit, time_SC, time_SC_earliesthit, pl_SC_ETLD1, pl_SC_ETLD1_earliesthit, time_SC_ETLD1, time_SC_ETLD1_earliesthit;
           float p_SC, p_SC_earliesthit, p_SC_ETLD1, p_SC_ETLD1_earliesthit;
+          float n_simHits=-1.;
           
           for (const auto& recClusterRef : recoClustersRefs) {
             if (recClusterRef.isNonnull()) {
@@ -1231,16 +1236,17 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                           if (maxClEnBTL > 0 ){
                             MCTOF = -10;
                           }else{
-                          if ((*simClusterIt)->simLCEnergy() > maxClEnBTL){
-                            MCTOF = (*simClusterIt)->simLCTime();
-                            maxClEnBTL = (*simClusterIt)->simLCEnergy();
-                            pl_SC = (*simClusterIt)->simLCPL();
-                            pl_SC_earliesthit = (*simClusterIt)->simLCearliestPL();
-                            p_SC = (*simClusterIt)->simLCP();
-                            p_SC_earliesthit = (*simClusterIt)->simLCearliestP();
-                            
-                            time_SC = (*simClusterIt)->simLCTime();
-                            time_SC_earliesthit = (*simClusterIt)->simLCearliestTime();
+                            n_simHits = (*simClusterIt)->hits_and_times().size();
+                            if ((*simClusterIt)->simLCEnergy() > maxClEnBTL){
+                              MCTOF = (*simClusterIt)->simLCTime();
+                              maxClEnBTL = (*simClusterIt)->simLCEnergy();
+                              pl_SC = (*simClusterIt)->simLCPL();
+                              pl_SC_earliesthit = (*simClusterIt)->simLCearliestPL();
+                              p_SC = (*simClusterIt)->simLCP();
+                              p_SC_earliesthit = (*simClusterIt)->simLCearliestP();
+                              
+                              time_SC = (*simClusterIt)->simLCTime();
+                              time_SC_earliesthit = (*simClusterIt)->simLCearliestTime();
                         }
                       }
                       }
@@ -1316,6 +1322,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             p_SC_earliesthit_vec.push_back(p_SC_earliesthit);
             time_SC_vec.push_back(time_SC);
             time_SC_earliesthit_vec.push_back(time_SC_earliesthit);
+            n_simHits_vec.push_back(n_simHits);
           }else{
             simCluster_time_vec.push_back(-99.);  // if no sim cluster associated, fill with -9999
             pl_SC_vec.push_back(-99.);
@@ -1324,6 +1331,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             p_SC_earliesthit_vec.push_back(-99.);
             time_SC_vec.push_back(-99.);
             time_SC_earliesthit_vec.push_back(-99.);
+            n_simHits_vec.push_back(-1.);
           }
 
           if  (isTPmtdCorrectETLD1){
@@ -1558,6 +1566,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           pl_SC_earliesthit_vec.push_back(-99.);
           p_SC_vec.push_back(-99.);
           p_SC_earliesthit_vec.push_back(-99.);
+          n_simHits_vec.push_back(-1.);
           
           time_SC_vec.push_back(-99.);
           time_SC_earliesthit_vec.push_back(-99.);

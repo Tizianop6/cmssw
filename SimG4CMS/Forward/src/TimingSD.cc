@@ -251,7 +251,7 @@ bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
 
     hit->setVertexPosition(theTrack->GetVertexPosition());
 
-    hit->setPathLength(theTrack->GetTrackLength());
+    hit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
   }
   return true;
 }
@@ -309,7 +309,7 @@ void TimingSD::createNewHit(const G4Step* aStep) {
 
   currentHit->setVertexPosition(theTrack->GetVertexPosition());
 
-  currentHit->setPathLength(theTrack->GetTrackLength());
+  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
 
   updateHit();
   storeHit(currentHit);
@@ -321,6 +321,7 @@ void TimingSD::updateHit() {
 #ifdef EDM_ML_DEBUG
   LogDebug("TimingSim") << "updateHit: " << GetName() << " add eloss(GeV) " << edeposit
                                 << "CurrentHit=" << currentHit << ", PostStepPoint= " << postStepPoint->GetPosition();
+  LogDebug("TimingSim") << "TimingSD: Transient hit: currentHit->getPathLength()\n"<< currentHit->getPathLength()/CLHEP::cm;
 #endif
 
   // buffer for next steps:
