@@ -1,4 +1,4 @@
-//#define EDM_ML_DEBUG
+#define EDM_ML_DEBUG
 
 #include "SimG4CMS/Forward/interface/MtdSD.h"
 
@@ -50,10 +50,10 @@ MtdSD::MtdSD(const std::string& name,
   setCuts(energyCut, energyHistoryCut);
 
   double newTimeFactor = 1. / m_p.getParameter<double>("TimeSliceUnit");
-  edm::LogVerbatim("MtdSim") << "New time factor = " << newTimeFactor;
+  LogDebug("MtdSim") << "New time factor = " << newTimeFactor;
   setTimeFactor(newTimeFactor);
 
-  edm::LogVerbatim("MtdSim") << "MtdSD: Instantiation completed for " << name;
+  LogDebug("MtdSim") << "MtdSD: Instantiation completed for " << name;
 }
 
 MtdSD::~MtdSD() {}
@@ -64,7 +64,7 @@ uint32_t MtdSD::setDetUnitId(const G4Step* aStep) {
   } else {
     getBaseNumber(aStep);
 #ifdef EDM_ML_DEBUG
-    edm::LogVerbatim("MtdSim") << "DetId = " << numberingScheme->getUnitID(theBaseNumber);
+    LogDebug("MtdSim") << "DetId = " << numberingScheme->getUnitID(theBaseNumber);
 #endif
     return numberingScheme->getUnitID(theBaseNumber);
   }
@@ -72,7 +72,7 @@ uint32_t MtdSD::setDetUnitId(const G4Step* aStep) {
 
 void MtdSD::setNumberingScheme(MTDNumberingScheme* scheme) {
   if (scheme != nullptr) {
-    edm::LogVerbatim("MtdSim") << "MtdSD: updates numbering scheme for " << GetName();
+    LogDebug("MtdSim") << "MtdSD: updates numbering scheme for " << GetName();
     if (numberingScheme)
       delete numberingScheme;
     numberingScheme = scheme;
@@ -88,12 +88,12 @@ void MtdSD::getBaseNumber(const G4Step* aStep) {
   //Get name and copy numbers
   if (theSize > 1) {
 #ifdef EDM_ML_DEBUG
-    edm::LogVerbatim("MtdSim") << "Building MTD basenumber:";
+    LogDebug("MtdSim") << "Building MTD basenumber:";
 #endif
     for (int ii = 0; ii < theSize; ii++) {
       theBaseNumber.addLevel(touch->GetVolume(ii)->GetName(), touch->GetReplicaNumber(ii));
 #ifdef EDM_ML_DEBUG
-      edm::LogVerbatim("MtdSim") << "MtdSD::getBaseNumber(): Adding level " << ii << ": "
+      LogDebug("MtdSim") << "MtdSD::getBaseNumber(): Adding level " << ii << ": "
                                  << touch->GetVolume(ii)->GetName() << "[" << touch->GetReplicaNumber(ii) << "]";
 #endif
     }
@@ -114,13 +114,13 @@ int MtdSD::getTrackID(const G4Track* aTrack) {
     if (rname == "FastTimerRegionSensBTL") {
       if (trkInfo->isInTrkFromBackscattering()) {
         theID = PSimHit::addTrackIdOffset(theID, k_idFromCaloOffset);
-      } else if (trkInfo->isExtSecondary() && !trkInfo->isInTrkFromBackscattering() && !trkInfo->storeTrack()) {
+      } else if (trkInfo->isExtSecondary() && !trkInfo->isInTrkFromBackscattering()) {
         theID = PSimHit::addTrackIdOffset(theID, k_idsecOffset);
-      } else if (trkInfo->isBTLlooper()) {
+      } else if (trkInfo->isBTLlooper() && !trkInfo->isInTrkFromBackscattering()) {
         theID = PSimHit::addTrackIdOffset(theID, k_idloopOffset);
       }
 #ifdef EDM_ML_DEBUG
-      edm::LogVerbatim("MtdSim") << "MtdSD: Track ID: " << aTrack->GetTrackID()
+      LogDebug("MtdSim") << "MtdSD: Track ID: " << aTrack->GetTrackID()
                                  << " BTL Track ID: " << trkInfo->mcTruthID() << ":" << theID;
 #endif
     } else if (rname == "FastTimerRegionSensETL") {
@@ -128,7 +128,7 @@ int MtdSD::getTrackID(const G4Track* aTrack) {
         theID = PSimHit::addTrackIdOffset(theID, k_idETLfromBack);
       }
 #ifdef EDM_ML_DEBUG
-      edm::LogVerbatim("MtdSim") << "MtdSD: Track ID: " << aTrack->GetTrackID()
+      LogDebug("MtdSim") << "MtdSD: Track ID: " << aTrack->GetTrackID()
                                  << " ETL Track ID: " << trkInfo->mcTruthID() << ":" << theID;
 #endif
       // In the case of ECAL GFlash fast spot may be inside MTD and should be ignored
