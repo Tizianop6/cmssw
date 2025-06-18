@@ -124,6 +124,7 @@ void TimingSD::getStepInfo(const G4Step* aStep) {
   preStepPoint = aStep->GetPreStepPoint();
   postStepPoint = aStep->GetPostStepPoint();
   hitPointExit = postStepPoint->GetPosition();
+  lastStepLength_ = aStep->GetStepLength();
   setToLocal(preStepPoint, hitPointExit, hitPointLocalExit);
 
   // neutral particles deliver energy post step
@@ -135,7 +136,7 @@ void TimingSD::getStepInfo(const G4Step* aStep) {
   } else {
     hitPoint = preStepPoint->GetPosition();
     setToLocal(preStepPoint, hitPoint, hitPointLocal);
-    tof = (float)(preStepPoint->GetGlobalTime() * invns);
+    tof = ((float)(preStepPoint->GetGlobalTime() * invns) + (float)(postStepPoint->GetGlobalTime() * invns))/2;
   }
 
 #ifdef EDM_ML_DEBUG
@@ -227,7 +228,7 @@ bool TimingSD::hitExists(const G4Step* aStep) {
   return found;
 }
 
-bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
+bool TimingSD::checkHit(const G4Step* aStep_, BscG4Hit* hit) {
   // change hit info to fastest primary particle
   if (tof < hit->getTof()) {
     hit->setTrackID(primaryID);
@@ -251,7 +252,7 @@ bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
 
     hit->setVertexPosition(theTrack->GetVertexPosition());
 
-    hit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
+    hit->setPathLength(theTrack->GetTrackLength()-aStep_->GetStepLength()/2);// - lastStepLength_);
   }
   return true;
 }
@@ -309,7 +310,7 @@ void TimingSD::createNewHit(const G4Step* aStep) {
 
   currentHit->setVertexPosition(theTrack->GetVertexPosition());
 
-  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
+  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->GetStepLength()/2);
 
   updateHit();
   storeHit(currentHit);

@@ -104,6 +104,7 @@ private:
 
   double energyCut;         // MeV
   double energyHistoryCut;  // MeV
+  double lastStepLength_;
 
   double incidentEnergy;  // MeV
   float tof;              // ns
