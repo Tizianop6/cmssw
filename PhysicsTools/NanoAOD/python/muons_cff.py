@@ -181,6 +181,9 @@ muonTable = simpleCandidateFlatTableProducer.clone(
         isTimeValid = Var("isTimeValid()", bool, doc="Time measurement is valid"),
         inverseBeta = Var("inverseBeta()", float, doc="1/beta", precision=6),
         inverseBetaErr = Var("inverseBetaErr()", float, doc="1/beta error", precision=6),
+        timeNdof = Var("time().nDof", "uint8", doc="Number of measurements used in time calculation"),
+        direction = Var("time().direction", "uint8", doc="Direction, OutsideIn = -1, Undefined = 0, InsideOut = 1"),
+        
         ),
     externalVariables = cms.PSet(
         mvaTTH = ExtVar(cms.InputTag("muonMVATTH"),float, doc="TTH MVA lepton ID score",precision=14),
