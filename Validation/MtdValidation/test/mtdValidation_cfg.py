@@ -8,28 +8,23 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
-process.load('SimGeneral.MixingModule.mixNoPU_cfi') # No pileup
+process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 
 process.load("Configuration.Geometry.GeometryExtendedRun4D110Reco_cff")
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-
-# For playback pileup mode
-# process.load('SimGeneral.MixingModule.mix_POISSON_average_cfi')
-# process.load('Configuration.StandardSequences.Services_cff')
-# Other statements
-# process.mix.input.nbPileupEvents.averageNumber = cms.double(200.000000)
-# process.mix.bunchspace = cms.int32(25)
-# process.mix.minBunch = cms.int32(-3)
-# process.mix.maxBunch = cms.int32(3)
-# process.mix.input.fileNames = cms.untracked.vstring([]) # MinBias, from step3 confif file
-
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T33', '')
 process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+
+outname = "tree.root"
+process.TFileService = cms.Service("TFileService",
+                                    fileName = cms.string(outname)
+                                   )
+
 
 #Setup FWK for multithreaded
 process.options.numberOfThreads = 4
@@ -38,18 +33,14 @@ process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
 
 process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(10),
+    reportEvery = cms.untracked.int32(1),
 )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+        'file:../step3.root'
     )
 )
-
-# For playback pileup mode
-# process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
-# process.mix.playback = True
 
 process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
@@ -69,9 +60,8 @@ etlValidation = cms.Sequence(process.etlSimHitsValid + process.etlDigiHitsValid 
 # --- Global Validation
 process.load("Validation.MtdValidation.mtdTracksValid_cfi")
 process.load("Validation.MtdValidation.mtdEleIsoValid_cfi")
-process.load("Validation.MtdValidation.vertices4DValid_cff")
+process.load("Validation.MtdValidation.vertices4DValid_cfi")
 
-# process.btlSimHitsValid.optionalPlots = True
 # process.btlDigiHitsValid.optionalPlots = True
 # process.etlDigiHitsValid.optionalPlots = True
 # process.btlLocalRecoValid.optionalPlots = True
@@ -92,6 +82,10 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
 )
 
 process.p = cms.Path( process.mix + process.mtdTrackingRecHits + process.validation )
+#process.p = cms.Path( process.mix  + process.validation )
+
+
+
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.DQMoutput_step = cms.EndPath( process.DQMoutput )
 
