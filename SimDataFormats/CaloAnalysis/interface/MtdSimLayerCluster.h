@@ -49,11 +49,11 @@ public:
       else{
         std::cout << "Discarded: ";
       }
-      std::cout << "MTDSimLayerCluster: pathlengths_[" << i << "] = " << pathlengths_[i] << " energies_[" << i << "] = " << energies_[i] << " time = "<< times_[i]<< " p= "<< ps_[i] <<std::endl;
+      //std::cout << "MTDSimLayerCluster: pathlengths_[" << i << "] = " << pathlengths_[i] << " energies_[" << i << "] = " << energies_[i] << " time = "<< times_[i]<< " p= "<< ps_[i] <<std::endl;
       }
     if (tot_en != 0.)
       simLC_PL_ = simLC_PL_ / tot_en;
-    std::cout << "--> MTDSimLayerCluster weighted average PL: " << simLC_PL_ << std::endl;
+    //std::cout << "--> MTDSimLayerCluster weighted average PL: " << simLC_PL_ << std::endl;
     
     return simLC_PL_;
   }
@@ -71,7 +71,7 @@ public:
       }
     if (tot_en != 0.)
     simLC_P_ = simLC_P_ / tot_en;
-    std::cout << "--> MTDSimLayerCluster weighted average P: " << simLC_P_ << std::endl;
+    //std::cout << "--> MTDSimLayerCluster weighted average P: " << simLC_P_ << std::endl;
     
     return simLC_P_;
   }

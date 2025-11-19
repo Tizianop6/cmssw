@@ -227,7 +227,7 @@ bool TimingSD::hitExists(const G4Step* aStep) {
   return found;
 }
 
-bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
+bool TimingSD::checkHit(const G4Step* aStep_, BscG4Hit* hit) {
   // change hit info to fastest primary particle
   if (tof < hit->getTof()) {
     hit->setTrackID(primaryID);
@@ -251,7 +251,7 @@ bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
 
     hit->setVertexPosition(theTrack->GetVertexPosition());
 
-    hit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
+    hit->setPathLength(theTrack->GetTrackLength() - aStep_->GetStepLength());
   }
   return true;
 }
@@ -309,7 +309,7 @@ void TimingSD::createNewHit(const G4Step* aStep) {
 
   currentHit->setVertexPosition(theTrack->GetVertexPosition());
 
-  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->getStepLength());
+  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->GetStepLength());
 
   updateHit();
   storeHit(currentHit);
