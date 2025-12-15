@@ -250,8 +250,18 @@ bool TimingSD::checkHit(const G4Step* aStep_, BscG4Hit* hit) {
     hit->setProcessId(theEnumerator->processId(theTrack->GetCreatorProcess()));
 
     hit->setVertexPosition(theTrack->GetVertexPosition());
-
-    hit->setPathLength(theTrack->GetTrackLength() - aStep_->GetStepLength());
+    if (theTrack->GetDefinition()->GetPDGCharge()==0.0) {
+      hit->setPathLength(theTrack->GetTrackLength());
+    } else {
+      hit->setPathLength(theTrack->GetTrackLength() - aStep_->GetStepLength());
+    }
+    float betaSim = (hit->getPathLength() / (10. * tof * 29.9792458)); // pathlength in cm, tof in ns
+    if (betaSim>1.0){
+      std::cout << " WARNING: beta>1 iin CheckHit, beta: " << betaSim << " path length from track (cm): " << currentHit->getPathLength()/10. << "\n";
+    }
+    
+    std::cout << "TimingSD checkHit: path length at hit (cm): " << theTrack->GetTrackLength()/CLHEP::cm << " corrected for step length (cm): "
+            << (theTrack->GetTrackLength() - aStep_->GetStepLength())/CLHEP::cm << " correction value "<< aStep_->GetStepLength() <<" value actually saved in SimHit: " << hit->getPathLength() << " theTrack->GetDefinition()->GetPDGCharge() " << theTrack->GetDefinition()->GetPDGCharge()<< " == 0 : "<< (theTrack->GetDefinition()->GetPDGCharge() == 0.0) <<" incidentEnergy:" <<  (float)incidentEnergy << " time of SimHit: " << tof <<" vertex time: "<<(theTrack->GetGlobalTime() - theTrack->GetLocalTime())*invns  <<"\n";
   }
   return true;
 }
@@ -308,9 +318,55 @@ void TimingSD::createNewHit(const G4Step* aStep) {
   currentHit->setProcessId(theEnumerator->processId(theTrack->GetCreatorProcess()));
 
   currentHit->setVertexPosition(theTrack->GetVertexPosition());
+  float muonmass = 0.1056583755; 
+  if (theTrack->GetDefinition()->GetPDGCharge()==0.0) {
+    currentHit->setPathLength(theTrack->GetTrackLength());
+  } else {
+    currentHit->setPathLength(theTrack->GetTrackLength() - aStep->GetStepLength());
+  }
+  //currentHit->setPathLength(theTrack->GetTrackLength() - aStep->GetStepLength());
+  
+  float speedFromMomentum = float(preStepPoint->GetMomentum().mag() * invgev) / std::sqrt(float(preStepPoint->GetMomentum().mag2()) * invgev *invgev + muonmass*muonmass);
+  
+  float alternativeTime = (theTrack->GetGlobalTime() - (aStep->GetDeltaTime()))*invns;
+  if (theTrack->GetDefinition()->GetPDGCharge()==0.0) {
+    alternativeTime = (theTrack->GetGlobalTime())*invns;
+  }
+  std::cout << " \n Alternative time calculation (ns): " << alternativeTime << " vs preStepPoint time (ns): " << (preStepPoint->GetGlobalTime() * invns) << " delta: " << alternativeTime - tof <<"\n";
+  
+  if (abs(alternativeTime - tof) > 0.0001){
+    std::cout << " DIFFERENCE IN TIME CALCULATION, preStepPoint(ns): " << alternativeTime - (preStepPoint->GetGlobalTime() * invns) << "\n";
+    std::cout << " DIFFERENCE IN TIME CALCULATION, tof (ns): " << alternativeTime - tof << "\n";
+    
+  }
+  //float PLfromToF = speedFromMomentum * (float)(preStepPoint->GetGlobalTime() * invns) * 29.9792458;
+  float PLfromToF = speedFromMomentum * alternativeTime * 29.9792458;
+  double vertexTime = (theTrack->GetGlobalTime() - theTrack->GetLocalTime())*invns; 
+  float betaSim = currentHit->getPathLength()/(10.*(tof-vertexTime)*29.9792458);
+  if (betaSim>1.0){
+    std::cout << " WARNING: beta>1 , beta: " << betaSim << " path length from track (cm): " << currentHit->getPathLength()/10.
+                                  << " path length from ToF (cm): " << PLfromToF << " tof (ns): " << tof << " vertextime " << vertexTime <<"\n";
 
-  currentHit->setPathLength(theTrack->GetTrackLength() - aStep->GetStepLength());
+  }
+  std::cout << "TimingSD createNewHit: path length at hit (cm): " << theTrack->GetTrackLength()/CLHEP::cm << " corrected for step length (cm): "
+            << (theTrack->GetTrackLength() - aStep->GetStepLength())/CLHEP::cm << " correction value "<< aStep->GetStepLength() <<" value actually saved in SimHit: " << currentHit->getPathLength() << " theTrack->GetDefinition()->GetPDGCharge() " << theTrack->GetDefinition()->GetPDGCharge()<< " == 0 : "<< (theTrack->GetDefinition()->GetPDGCharge() == 0.0) <<" incidentEnergy:" <<  (float)incidentEnergy << " time of SimHit: " << tof <<" vertex time: "<<(theTrack->GetGlobalTime() - theTrack->GetLocalTime())*invns << " PhiAtEntry "<< PhiAtEntry  <<"\n";
 
+  if ((abs(PLfromToF - currentHit->getPathLength()/10.) > 0.1) && abs(theTrack->GetDefinition()->GetPDGEncoding()) == 13) {
+    std::cout << "DIFFERENCE IN PATH LENGTH from ToF: " << PLfromToF << " from Track: "
+                                  << currentHit->getPathLength()/10. << "\n";
+    }
+    if (abs(theTrack->GetDefinition()->GetPDGEncoding()) == 13){
+      std::cout << " Particle: " << theTrack->GetDefinition()->GetParticleName()
+                                    << " Momentum (GeV): " << preStepPoint->GetMomentum().mag() * invgev
+                                    << " Mass (GeV): " << theTrack->GetDefinition()->GetPDGMass() * invgev << "eta" <<  "\n";
+      std::cout << "isFirstStepInVolume: " << aStep->IsFirstStepInVolume()
+                                    << " isLastStepInVolume: " << aStep->IsLastStepInVolume() << "\n";
+      std::cout << "preStepPoint Status: " << preStepPoint->GetStepStatus()
+                                    << " postStepPoint Status: " << postStepPoint->GetStepStatus() << "\n";
+      std::cout << " Speed from Momentum: " << speedFromMomentum
+                                    << " true speed: " << theTrack->GetVelocity() << "\n";
+                                }
+  
   updateHit();
   storeHit(currentHit);
 }

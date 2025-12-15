@@ -804,6 +804,8 @@ void MtdTruthAccumulator::fillSimHits(
       if (std::get<1>(simTrackDetIdMap[simHit.trackId()][uniqueId]) == 0. ||
           simHit.tof() < std::get<1>(simTrackDetIdMap[simHit.trackId()][uniqueId])) {
         std::get<1>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = simHit.tof();
+        std::get<3>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = convertMmToCm(simHit.pathLength());
+      
       }
 
       float xSim = std::get<2>(simTrackDetIdMap[simHit.trackId()][uniqueId]).x() + simscaled.x() * simHit.energyLoss();
@@ -811,7 +813,6 @@ void MtdTruthAccumulator::fillSimHits(
       float zSim = std::get<2>(simTrackDetIdMap[simHit.trackId()][uniqueId]).z() + simscaled.z() * simHit.energyLoss();
       LocalPoint posSim(xSim, ySim, zSim);
       std::get<2>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = posSim;
-      std::get<3>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = convertMmToCm(simHit.pathLength());
       std::get<4>(simTrackDetIdMap[simHit.trackId()][uniqueId]) = simHit.pabs();
 
 #ifdef PRINT_DEBUG

@@ -104,6 +104,7 @@ private:
   const bool trkRecSel(const reco::TrackBase&);
   const bool trkRecSelLowPt(const reco::TrackBase&);
   const edm::Ref<std::vector<TrackingParticle>>* getMatchedTP(const reco::TrackBaseRef&);
+  
   void isParticle(const reco::TrackRef&,
     const edm::ValueMap<float>&,
     const edm::ValueMap<float>&,
@@ -116,6 +117,8 @@ private:
     bool&,
     bool&);
 
+
+  
 
   const unsigned long int uniqueId(const uint32_t x, const EncodedEventId& y) {
     const uint64_t a = static_cast<uint64_t>(x);
@@ -1315,6 +1318,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           isTPmtdETLD1_vec.push_back(isTPmtdETLD1);
           isTPmtdETLD2_vec.push_back(isTPmtdETLD2);
           if (isTPmtdDirectCorrectBTL) {
+            float simBeta = pl_SC_earliesthit / ((time_SC_earliesthit - tsim)*29.9792458);
+            if (simBeta > 1.0){
+              std::cout << "Confirmed Warning: simBeta > 1.simBeta: " << simBeta << " pl_sc_earliest: " << pl_SC_earliesthit << " tof: "<< time_SC_earliesthit-tsim <<  " time_SC_earliesthit: " << time_SC_earliesthit << " tsim: " << tsim << " nsimhits: "<< n_simHits << " p_SC_earliest" << p_SC_earliesthit << std::endl;
+              //std::cout << "pl_SC_earliesthit- "
+            }
+            
             simCluster_time_vec.push_back(MCTOF);
             pl_SC_vec.push_back(pl_SC);
             pl_SC_earliesthit_vec.push_back(pl_SC_earliesthit);
