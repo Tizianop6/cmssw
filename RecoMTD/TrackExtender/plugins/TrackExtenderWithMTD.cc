@@ -1277,7 +1277,7 @@ void TrackExtenderWithMTDT<TrackCollection>::fillMatchingHits(const DetLayer* il
     auto const& firstHit = *hitsInLayer.begin();
     LogTrace("TrackExtenderWithMTD") << "TrackExtenderWithMTD: matching trial 1: estChi2= " << firstHit.estChi2
                                      << " timeChi2= " << firstHit.timeChi2;
-    if (firstHit.estChi2 < spaceChi2Cut && firstHit.timeChi2 < timeChi2Cut) {
+    if (firstHit.estChi2 < spaceChi2Cut && ((firstHit.timeChi2 < timeChi2Cut) || (timeChi2Cut < 0.))) {
       hitMatched = true;
       output.push_back(hitbuilder_->build(firstHit.hit));
       if (firstHit < bestHit)
@@ -1293,7 +1293,7 @@ void TrackExtenderWithMTDT<TrackCollection>::fillMatchingHits(const DetLayer* il
       auto const& firstHit = *hitsInLayer.begin();
       LogTrace("TrackExtenderWithMTD") << "TrackExtenderWithMTD: matching trial 2: estChi2= " << firstHit.estChi2
                                        << " timeChi2= " << firstHit.timeChi2;
-      if (firstHit.timeChi2 < timeChi2Cut) {
+      if ((firstHit.timeChi2 < timeChi2Cut) || (timeChi2Cut < 0.)) {
         if (firstHit.estChi2 < spaceChi2Cut) {
           hitMatched = true;
           output.push_back(hitbuilder_->build(firstHit.hit));
@@ -1487,10 +1487,9 @@ reco::Track TrackExtenderWithMTDT<TrackCollection>::buildTrack(const reco::Track
       sigmatofp = tofInfo.sigma_dt_p;
     }
   }
-
+  
   return routput();
 }
-
 template <class TrackCollection>
 reco::TrackExtra TrackExtenderWithMTDT<TrackCollection>::buildTrackExtra(const Trajectory& trajectory) const {
   static const string metname = "TrackExtenderWithMTD";

@@ -622,6 +622,24 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   r2s_ = recoToSimH.product();
 
   unsigned int index = 0;
+  edm::Handle<TrackingParticleCollection> TPCollectionH;
+  
+  iEvent.getByToken(trackingParticleCollectionToken_, TPCollectionH);
+  if (!TPCollectionH.isValid())
+    edm::LogWarning("Primary4DVertexValidation") << "TPCollectionH is not valid";
+
+  // loop on trackingparticles
+  for (size_t i = 0; i < TPCollectionH->size(); ++i) {
+    const auto tpRef = TrackingParticleRef(TPCollectionH, i);
+    if (tpRef.isNull())
+      continue;
+
+    const auto& tp = *tpRef;
+    //std::cout << "TP index: " << tpRef.key() << " pdgId: " << tp.pdgId() << " pt: " << tp.pt()
+    //          << " eta: " << tp.eta() << " phi: " << tp.phi() << std::endl;
+  }
+  
+
 
   // --- Loop over all RECO tracks ---
   for (const auto& trackGen : *GenRecTrackHandle) {
