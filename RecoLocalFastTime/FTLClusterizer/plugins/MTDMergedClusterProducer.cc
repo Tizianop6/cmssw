@@ -232,7 +232,7 @@ FTLMergedCluster MTDMergedClusterProducer::mergeClusters(const std::vector<const
         avgYError = std::sqrt(weightedErrorY2) / totalEnergy;
     }
     
-    DetId mergedId = DetId(seedId.rawId());
+    DetId mergedId = DetId(primary->id().rawId());
     FTLMergedCluster mergedCluster(mergedId, totalEnergy, avgTime, avgTimeError, avgX, avgY, avgXError, avgYError, clusterIds, clusterRefs);
 
     return mergedCluster;
