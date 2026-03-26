@@ -241,6 +241,8 @@ namespace {
     constexpr float m_k_inv2 = 1.0f / m_k / m_k;
     constexpr float m_p = 0.9382720813f;
     constexpr float m_p_inv2 = 1.0f / m_p / m_p;
+    constexpr float sigma2PL = 0.01f; // 1 mm uncertainty on path length, squared [cm^2]
+    
 
     TrackTofPidInfo tofpid;
 
@@ -266,20 +268,21 @@ namespace {
 
     auto sigmadeltat = [&](const float mass_inv2) {
       float res(1.f);
+         
       switch (sigma_choice) {
         case SigmaTofCalc::kCost:
           // sigma(t) = sigma(p) * |dt/dp| = sigma(p) * DeltaL/c * m^2 / (p^2 * E)
-          res = tofpid.pathlength * c_inv * trs.segmentSigmaMom_[trs.nSegment_ - 1] /
-                (magp2 * sqrt(magp2 + 1 / mass_inv2) * mass_inv2);
+          res = sqrt(pow(tofpid.pathlength * c_inv * trs.segmentSigmaMom_[trs.nSegment_ - 1] /
+                (magp2 * sqrt(magp2 + 1 / mass_inv2) * mass_inv2),2) + c_inv*c_inv*(1+1/(mass_inv2*magp2))*sigma2PL);
           break;
         case SigmaTofCalc::kSegm:
-          res = trs.computeSigmaTof(mass_inv2);
+          res = sqrt(pow(trs.computeSigmaTof(mass_inv2), 2)+ c_inv*c_inv*(1+1/(mass_inv2*magp2))*sigma2PL);
           break;
         case SigmaTofCalc::kMixd:
           float res1 = tofpid.pathlength * c_inv * trs.segmentSigmaMom_[trs.nSegment_ - 1] /
                        (magp2 * sqrt(magp2 + 1 / mass_inv2) * mass_inv2);
           float res2 = trs.computeSigmaTof(mass_inv2);
-          res = sqrt(res1 * res1 + res2 * res2 + 2 * res1 * res2);
+          res = sqrt(res1 * res1 + res2 * res2 + 2 * res1 * res2 + c_inv*c_inv*(1+1/(mass_inv2*magp2))*sigma2PL);
       }
 
       return res;
