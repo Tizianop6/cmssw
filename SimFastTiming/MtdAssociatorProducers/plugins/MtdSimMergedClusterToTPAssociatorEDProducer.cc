@@ -20,7 +20,7 @@
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
 //
-// class decleration
+// class declaration
 //
 
 class MtdSimMergedClusterToTPAssociatorEDProducer : public edm::global::EDProducer<> {

@@ -20,13 +20,13 @@ namespace reco {
     /// Destructor
     virtual ~MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl();
 
-    /// Associate a MtdRecoMergedCluster to MtdSimMergedClusters
+    /// Associate MtdRecoMergedCluster to MtdSimMergedClusters
     virtual reco::MergedRecoToSimCollectionMtd associateRecoToSim(
         const edm::Handle<FTLMergedClusterCollection> &btlRecoClusH,
         const edm::Handle<FTLMergedClusterCollection> &etlRecoClusH,
         const edm::Handle<MtdSimMergedClusterCollection> &simClusH) const;
 
-    /// Associate a MtdSimMergedClusters to MtdRecoMergedClusters
+    /// Associate MtdSimMergedClusters to MtdRecoMergedClusters
     virtual reco::MergedSimToRecoCollectionMtd associateSimToReco(
         const edm::Handle<FTLMergedClusterCollection> &btlRecoClusH,
         const edm::Handle<FTLMergedClusterCollection> &etlRecoClusH,

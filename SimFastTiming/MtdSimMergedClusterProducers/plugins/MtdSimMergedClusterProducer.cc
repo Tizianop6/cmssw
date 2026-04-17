@@ -165,7 +165,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     for (const auto& pair : ancestorMap) {
         uniqueAncestors.insert(pair.second);
     }
-    edm::LogInfo("MtdSimMergedClusterProducer") << "Total TrackingParticles: " << trackingParticles->size() 
+    LogDebug("MtdSimMergedClusterProducer") << "Total TrackingParticles: " << trackingParticles->size() 
                                           << ", Unique primary ancestors: " << uniqueAncestors.size();
 
     // reserve memory for output collection
@@ -183,18 +183,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
         }
         else{
             allsimLClusters.push_back(&cluster);
-        }
-
-        // if (cluster.energy() >= minEnergy_) {
-        //     // retrieve detId from first hit
-        //     BTLDetId detId = cluster.detIds_and_rows()[0].first;
-        //     // retrieve GEOGRAPHICAL id
-        //     BTLDetId geoDetId = detId.geographicalId(BTLDetId::CrysLayout::v3);
-
-        //     clusterMap[geoDetId].push_back(&cluster);
-        // }
-
-        
+        }        
     }
 
     // Sort simLClusters collection
@@ -215,9 +204,6 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
         if (iphiA != iphiB) return iphiA < iphiB;
         if (ietaA != ietaB) return ietaA < ietaB;
 
-        // if (idA.module() != idB.module()) return idA.module() < idB.module();
-        // if same module, sort by column range
-
         // Get min and max columns for both clusters
         auto [minA, maxA] = std::minmax_element(detIdsA.begin(), detIdsA.end(), [](auto const& x, auto const& y){
             return x.second.second < y.second.second;
@@ -235,22 +221,6 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
         return highest_icol_A > highest_icol_B; // larger cluster first
     });
 
-    // DEBUG: check ordering
-    // std::cout << "DEBUG: Checking cluster ordering" << std::endl;
-    for(const auto* cluster : allsimLClusters ){
-        // retrieve iphi, ieta
-        BTLDetId cluId(cluster->detIds_and_rows()[0].first);
-        std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.geographicalId(BTLDetId::CrysLayout::v3).rawId());
-        uint32_t iphi = indices.first;
-        uint32_t ieta = indices.second;
-        // std::cout << "CLUSTER #" << cluster - &(*simLClusters->begin()) << " zside = " << cluId.zside() << ", RR = " << cluId.mtdRR() << ", module = " << cluId.module() << "; iphi = " << iphi << ", ieta = " << ieta << " with hits at columns: ";
-        for (auto const& detId_row_col : cluster->detIds_and_rows()) {
-            int col = detId_row_col.second.second;
-            // std::cout << col << " ";
-        }
-        // std::cout << std::endl;
-    }
-
     // Now, construct cluster map from ordered collection
     std::map<BTLDetId, std::vector<const MtdSimLayerCluster*>> clusterMap;
 
@@ -266,10 +236,10 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     }
 
 
-    edm::LogInfo("MtdSimMergedClusterProducer") << "Found " << clusterMap.size() << " MTD SimLayerClusters above energy threshold";
+    LogDebug("MtdSimMergedClusterProducer") << "Found " << clusterMap.size() << " MTD SimLayerClusters above energy threshold";
 
     if (useTopologicalClustering_) {
-        edm::LogInfo("MtdSimMergedClusterProducer") << "Using TOPOLOGICAL + HISTORICAL clustering algorithm";
+        LogDebug("MtdSimMergedClusterProducer") << "Using TOPOLOGICAL + HISTORICAL clustering algorithm";
 
         // ------------------------------------------------------
         // NEW: HISTORY+TOPOLOGY IMPLEMENTATION
@@ -283,18 +253,10 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
             if (cluster.energy() < minEnergy_ || processedClusters.count(&cluster)) continue;
 
             // // TEMPORARY: forget about ETL hits
-            // std::cout << "DEBUG: cluster detId: " << std::endl;
-            // std::cout << BTLDetId(cluster.detIds_and_rows()[0].first) << std::endl;
-            // std::cout << "Subdetector: " << BTLDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() << " (BTL = " << MTDDetId::BTL << ", ETL = " << MTDDetId::ETL << ")" << std::endl;
             if (!cluster.detIds_and_rows().empty() && MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::ETL) continue;
             
             BTLDetId cluId(cluster.detIds_and_rows()[0].first);
 
-            // LogDebug("MtdSimMergedClusterProducer") << "Processing cluster DetId " << cluId.rawId() 
-            //                                     << " with energy " << cluster.simLCEnergy() << " MeV";
-            // std::cout << "------------------------------------------------" << std::endl;
-            // std::cout << "Processing cluster DetId " << cluId.rawId() 
-            //                                    << " with energy " << cluster.simLCEnergy() << " MeV" << std::endl;
             
             // Start with current cluster
             std::vector<const MtdSimLayerCluster*> mergedClusterClusters = {&cluster};
@@ -307,15 +269,13 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
             int rightmost_col = -1;
 
             // iterate over detIds_and_rows:
-            // LogDebug("MtdSimMergedClusterProducer") << "Iterating over " << cluster.detIds_and_rows().size() << " cluster hits";
-            // std::cout << "Iterating over " << cluster.detIds_and_rows().size() << " cluster hits" << std::endl;
+            LogDebug("MtdSimMergedClusterProducer") << "Iterating over " << cluster.detIds_and_rows().size() << " cluster hits";
             for (auto const& detId_row_col : cluster.detIds_and_rows()) {
                 int row = detId_row_col.second.first;
                 int col = detId_row_col.second.second;
 
-                // LogDebug("MtdSimMergedClusterProducer") << "  Cluster hit at row " << row << ", col " << col;
-                // std::cout << "  Cluster hit at row " << row << ", col " << col << std::endl;
-
+                LogDebug("MtdSimMergedClusterProducer") << "  Cluster hit at row " << row << ", col " << col;
+                
                 if (col == 0) {
                     edgeHitIn0 = true;
                 } else if (col == 15) {
@@ -328,50 +288,40 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
             }
             
             bool hasEdgeHitCurrent = edgeHitIn0 || edgeHitIn15;
-            // LogDebug("MtdSimMergedClusterProducer") << "  Edge hits: col0=" << edgeHitIn0 << ", col15=" << edgeHitIn15;
-            // std::cout << "  Edge hits: col0=" << edgeHitIn0 << ", col15=" << edgeHitIn15 << std::endl;
-            // LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
-            // std::cout << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent << std::endl;
-
+            LogDebug("MtdSimMergedClusterProducer") << "  Edge hits: col0=" << edgeHitIn0 << ", col15=" << edgeHitIn15;
+            LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
+            
             // Get topology indices - use geographicalId (module-level) with crystal layout
-            // std::cout << "  DEBUG: getting BTL indices from geographicalId " << cluId.geographicalId(BTLDetId::CrysLayout::v3) << std::endl;
             std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.geographicalId(BTLDetId::CrysLayout::v3).rawId());
             uint32_t iphi = indices.first;
             uint32_t ieta = indices.second;
-            // LogDebug("MtdSimMergedClusterProducer") << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta;
-            // std::cout << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta << std::endl;
-
+            LogDebug("MtdSimMergedClusterProducer") << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta;
+            
             // ETA DIRECTION MERGING
             std::vector<int> etaOffsets = {1, 0, -1};
             for (int etaOffset : etaOffsets) {
-                // std::cout << "  Eta offset = " << etaOffset << std::endl;
                 if ((hasEdgeHitCurrent && iphi != std::numeric_limits<uint32_t>::max() && ieta != std::numeric_limits<uint32_t>::max()) || etaOffset == 0) {
-                    // LogDebug("MtdSimMergedClusterProducer") << "  Attempting eta-direction merging...";
-                    // std::cout << "  Attempting eta-direction merging..." << std::endl;
+                    LogDebug("MtdSimMergedClusterProducer") << "  Attempting eta-direction merging...";
                     uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
-                    // LogDebug("MtdSimMergedClusterProducer") << "    Checking adjacent detId at index (" << iphi << ", " << ieta + etaOffset << "): " << adjDetIdRaw;
-                    // std::cout << "    Checking adjacent detId at index (" << iphi << ", " << ieta + etaOffset << "): " << adjDetIdRaw << std::endl;
+                    LogDebug("MtdSimMergedClusterProducer") << "    Checking adjacent detId at index (" << iphi << ", " << ieta + etaOffset << "): " << adjDetIdRaw;
                     if (adjDetIdRaw == 0) continue;
                     
                     BTLDetId adjDetId(adjDetIdRaw);
                     auto it = clusterMap.find(adjDetId);
                     if (it == clusterMap.end()){
-                        // LogDebug("MtdSimMergedClusterProducer") << "    No cluster found at this detId";
-                        // std::cout << "    No cluster found at this detId" << std::endl;
+                        LogDebug("MtdSimMergedClusterProducer") << "    No cluster found at this detId";
                         continue;
                     }
                     
                     // Iterate over all clusters at this DetId
                     for (const MtdSimLayerCluster* adjCluster : it->second) {
                         if (processedClusters.count(adjCluster)){
-                            // LogDebug("MtdSimMergedClusterProducer") << "    Cluster found but already processed";
-                            // std::cout << "    Cluster found but already processed" << std::endl;
+                            LogDebug("MtdSimMergedClusterProducer") << "    Cluster found but already processed";
                             continue;
                         }
                         
-                        // LogDebug("MtdSimMergedClusterProducer") << "    Found eta neighbor at " << adjDetId.rawId();
-                        // std::cout << "    Found eta neighbor at " << adjDetId.rawId() << std::endl;
-
+                        LogDebug("MtdSimMergedClusterProducer") << "    Found eta neighbor at " << adjDetId.rawId();
+                        
                         // Check for opposite edge hit
                         bool hasOppositeEdgeHit = false;
                         int adj_leftmost_col = 20;
@@ -381,9 +331,8 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
                             int row = detId_row_col.second.first;
                             int col = detId_row_col.second.second;
 
-                            // LogDebug("MtdSimMergedClusterProducer") << "      adjacent cluster hit at row " << row << ", col " << col;
-                            // std::cout << "      adjacent cluster hit at row " << row << ", col " << col << std::endl;
-
+                            LogDebug("MtdSimMergedClusterProducer") << "      adjacent cluster hit at row " << row << ", col " << col;
+                            
                             if ((edgeHitIn0 && col == 15 && etaOffset == -1) || (edgeHitIn15 && col == 0 && etaOffset == 1)) {
                                 hasOppositeEdgeHit = true;
                             }
@@ -392,24 +341,16 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
                             if (col > adj_rightmost_col) adj_rightmost_col = col;
                         }
 
-                        // bool hasAdjacentCols = (abs(leftmost_col - adj_rightmost_col) == 1) || (abs(rightmost_col - adj_leftmost_col) == 1);
                         int clu_len = rightmost_col - leftmost_col + 1;
 
-                        // bool isLeftEdgeOverlapping = (abs(adj_leftmost_col  - leftmost_col) <= clu_len) && (abs(rightmost_col - adj_rightmost_col) <= clu_len); // equality includes adjacent clusters
-                        // bool isRightEdgeOverlapping = (abs(adj_rightmost_col - rightmost_col) <= clu_len) && (abs(leftmost_col - adj_leftmost_col) <= clu_len);
-
+                        
                         bool isLeftEdgeOverlapping = (abs(adj_leftmost_col  - leftmost_col) <= clu_len) && (abs(rightmost_col - adj_leftmost_col) <= clu_len); // equality includes adjacent clusters
                         bool isRightEdgeOverlapping = (abs(adj_rightmost_col - rightmost_col) <= clu_len) && (abs(leftmost_col - adj_rightmost_col) <= clu_len);
 
                         bool areClustersOverlapping = isLeftEdgeOverlapping || isRightEdgeOverlapping;
 
-                        // if (areClustersOverlapping && etaOffset == 0) {
-                            // std::cout << "      SAME MODULE MERGING: Found overlapping clusters in same module!" << std::endl;
-                            // std::cout << "      SAME MODULE MERGING: leftmost_col = " << leftmost_col << ", rightmost_col = " << rightmost_col
-                            //          << "; adj_leftmost_col = " << adj_leftmost_col << ", adj_rightmost_col = " << adj_rightmost_col << std::endl;
-                        // }
-
-                        if (hasOppositeEdgeHit || (areClustersOverlapping && etaOffset == 0)){ // && areTimingCompatible(&cluster, adjCluster)) { // FORGET ABOUT TIME COMPATIBILITY FOR NOW
+                        
+                        if (hasOppositeEdgeHit || (areClustersOverlapping && etaOffset == 0)){ 
                             // check for common ancestor
                             bool hasCommonAncestor = false;
                             const auto& simLayerClusters1 = simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
@@ -427,37 +368,26 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
                             }
 
                             if (hasCommonAncestor) {
-                                // LogDebug("MtdSimMergedClusterProducer") << "  -> MERGING ETA neighbor: " << cluId.rawId() 
-                                //         << " with " << adjDetId.rawId();
-                                // std::cout << "  -> MERGING ETA neighbor: " << cluId.rawId() 
-                                //        << " with " << adjDetId.rawId() << std::endl;
+                                LogDebug("MtdSimMergedClusterProducer") << "  -> MERGING ETA neighbor: " << cluId.rawId() << " with " << adjDetId.rawId();
                                 bool isBackscatterMergedcluster = mergedClusterClusters[0]->trackIdOffset() == 3;
                                 bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->trackIdOffset() == 3);
                                 bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->trackIdOffset() != 3);
                                 if (areBothBackscatter || areBothNotBackscatter) {
-                                    // std::cout << "  CLUSTER MERGING: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
-                                    //            << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
-                                    //            << ", adjCluster->trackIdOffset() = " << adjCluster->trackIdOffset() 
-                                    //            << ", merged cluster size = " << mergedClusterClusters.size()
-                                    //            << std::endl;
+                                    LogDebug("MtdSimMergedClusterProducer") << "  CLUSTER MERGING: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
+                                                << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
+                                                << ", adjCluster->trackIdOffset() = " << adjCluster->trackIdOffset() 
+                                                << ", merged cluster size = " << mergedClusterClusters.size()
+                                                << std::endl;
                                     mergedClusterClusters.push_back(adjCluster);
                                     processedClusters.insert(adjCluster);
                                     
                                     // update lowest/highest icol
                                     if (etaOffset == 0) {
-                                        // std::cout << "  SAME MODULE MERGING: current col range = ( " << leftmost_col << ", " << rightmost_col << ")" << std::endl;
                                         if (adj_leftmost_col < leftmost_col) leftmost_col = adj_leftmost_col;
                                         if (adj_rightmost_col > rightmost_col) rightmost_col = adj_rightmost_col;
-                                        // std::cout << "  SAME MODULE MERGING: updated col range = ( " << leftmost_col << ", " << rightmost_col << ")" << std::endl;
-                                    }
-
+                                        }
                                 } 
-                                // else {
-                                //     // std::cout << "  NOT MERGING CLUSTER THOUGH WE SHOULD HAVE!: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
-                                //                 << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
-                                //                 << ", adjCluster->trackIdOffset() = " << adjCluster->trackIdOffset()
-                                //                 << ", merged cluster size = " << mergedClusterClusters.size() << std::endl;
-                                // }
+                                
                             } else {
                                 LogDebug("MtdSimMergedClusterProducer") << "    Not merging: no common ancestor found";
                             }
@@ -471,36 +401,6 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
                 }
             }
             
-            // // PHI DIRECTION MERGING
-            // if (iphi != std::numeric_limits<uint32_t>::max() && ieta != std::numeric_limits<uint32_t>::max()) {
-                
-            //     std::vector<int> phiOffsets = {1, -1};
-            //     for (int phiOffset : phiOffsets) {
-            //         uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi + phiOffset, ieta);
-            //         if (adjDetIdRaw == 0) continue;
-                    
-            //         BTLDetId adjDetId(adjDetIdRaw);
-            //         auto it = clusterMap.find(adjDetId);
-            //         if (it == clusterMap.end()) continue;
-            //         if (processedClusters.count(it->second)) continue;
-                    
-            //         const MtdSimLayerCluster* adjCluster = it->second;
-                    // std::cout << "  Found phi neighbor at " << adjDetId.rawId() << std::endl;
-                    
-            //         // if (areTimingCompatible(&cluster, adjCluster)) {
-                        // std::cout << "  -> MERGING PHI neighbor: " << cluId.rawId() 
-            //         //                 << " with " << adjDetId.rawId() << std::endl;
-            //         //     mergedClusterClusters.push_back(adjCluster);
-            //         //     processedClusters.insert(adjCluster);
-            //         // }
-
-                    // std::cout << "  -> MERGING PHI neighbor: " << cluId.rawId() 
-            //                     << " with " << adjDetId.rawId() << std::endl;
-            //         mergedClusterClusters.push_back(adjCluster);
-            //         processedClusters.insert(adjCluster);
-
-            //     }
-            // }
             
             // Create mergedcluster from merged clusters
             MtdSimMergedCluster simMergedCluster;
@@ -530,10 +430,6 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
         for (const auto* clusterPointer : allsimETLLClusters) {
             const auto& cluster = *clusterPointer;
 
-            // // TEMPORARY: forget about ETL hits
-            // std::cout << "DEBUG: cluster detId: " << std::endl;
-            // std::cout << BTLDetId(cluster.detIds_and_rows()[0].first) << std::endl;
-            // std::cout << "Subdetector: " << BTLDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() << " (BTL = " << MTDDetId::BTL << ", ETL = " << MTDDetId::ETL << ")" << std::endl;
             MtdSimMergedCluster simMergedCluster;
             // create simLC reference by finding the index in the original collection
             size_t clusterIndex = clusterPointer - &(*simLClusters->begin());
@@ -600,7 +496,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     }
 
     // print all MtdSimMergedClusters
-    edm::LogInfo("MtdSimMergedClusterProducer") << "Found " << outputClusters->size() << " MtdSimMergedClusters";
+    LogDebug("MtdSimMergedClusterProducer") << "Found " << outputClusters->size() << " MtdSimMergedClusters";
     for (const auto& mergedCluster : *outputClusters) {
         LogDebug("MtdSimMergedClusterProducer") << mergedCluster;
         auto detids = mergedCluster.detIds();

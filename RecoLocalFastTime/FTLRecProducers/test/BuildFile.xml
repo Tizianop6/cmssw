@@ -8,6 +8,3 @@
   <flags EDM_PLUGIN="1"/>
 </library>
 
-<library file="MTDTrackingRecHitDump.cc" name="MTDTrackingRecHitDump">
-  <flags EDM_PLUGIN="1"/>
-</library>

@@ -20,7 +20,7 @@ public:
     FTLMergedCluster(DetId id, float energy, float time, float timeError, float x, float y, float xError, float yError, const std::vector<DetId>& clusterIds, const std::vector<FTLClusterRef>& clusterRefs)
         : id_(id), energy_(energy), time_(time), timeError_(timeError), x_(x), y_(y), xError_(xError), yError_(yError), clusterIds_(clusterIds), clusterRefs_(clusterRefs) {}
 
-    // getteri
+    // Functions to access the data members
     DetId id() const { return id_; }
     float energy() const { return energy_; }
     float time() const { return time_; }
@@ -47,6 +47,5 @@ private:
     std::vector<FTLClusterRef> clusterRefs_;
 };
 
-// typedef edmNew::DetSetVector<FTLMergedCluster> FTLMergedClusterCollection;
 
 #endif

@@ -1,6 +1,5 @@
 #ifndef SimDataFormats_Associations_MtdSimMergedClusterToTPAssociator_h
 #define SimDataFormats_Associations_MtdSimMergedClusterToTPAssociator_h
-// Author:  M. Malberti
 
 // system include files
 #include <memory>

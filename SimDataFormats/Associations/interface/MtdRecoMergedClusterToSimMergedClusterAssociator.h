@@ -1,6 +1,5 @@
 #ifndef SimDataFormats_Associations_MtdRecoMergedClusterToSimMergedClusterAssociator_h
 #define SimDataFormats_Associations_MtdRecoMergedClusterToSimMergedClusterAssociator_h
-// Original Author:  Martina Malberti
 
 // system include files
 #include <memory>

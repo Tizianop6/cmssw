@@ -23,20 +23,6 @@ process.load("SimGeneral.MixingModule.mixNoPU_cfi")  # Needed for TrackingPartic
 process.load('Configuration.Geometry.GeometryExtendedRun4D110Reco_cff')
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-# Configure logging levels for your producer
-process.MessageLogger.debugModules = ["*"]
-process.MessageLogger.cerr.MtdSimMergedClusterProducer = cms.untracked.PSet(
-    limit = cms.untracked.int32(-1),  # No limit on messages
-    # Choose your debug level:
-    # INFO: Shows LogInfo and above (basic info)
-    # DEBUG: Shows LogDebug and above (more detailed)  
-    # TRACE: Shows LogTrace and above (most detailed)
-    reportEvery = cms.untracked.int32(1)
-)
-# Set overall threshold:
-process.MessageLogger.cerr.threshold = cms.untracked.string('INFO')    # Basic info
-# process.MessageLogger.cerr.threshold = cms.untracked.string('DEBUG')   # More detailed
-# process.MessageLogger.cerr.threshold = cms.untracked.string('TRACE')   # Most detailed
 
 # Global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')

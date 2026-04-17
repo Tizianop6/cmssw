@@ -5,7 +5,6 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 #include "DataFormats/Common/interface/Handle.h"
-//#include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/FTLRecHit/interface/FTLMergedClusterCollections.h"
 
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
@@ -50,8 +49,8 @@ MTDTrackingRecHitProducer::MTDTrackingRecHitProducer(const edm::ParameterSet& ps
 // Configuration descriptions
 void MTDTrackingRecHitProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("barrelClusters", edm::InputTag("mtdClusters:FTLBarrel"));
-  desc.add<edm::InputTag>("endcapClusters", edm::InputTag("mtdClusters:FTLEndcap"));
+  desc.add<edm::InputTag>("barrelClusters", edm::InputTag("mtdMergedClusters:FTLBarrel"));
+  desc.add<edm::InputTag>("endcapClusters", edm::InputTag("mtdMergedClusters:FTLEndcap"));
   descriptions.add("mtdTrackingRecHitProducer", desc);
 }
 
@@ -108,7 +107,7 @@ void MTDTrackingRecHitProducer::produce(edm::StreamID, edm::Event& evt, const ed
 #endif
 
       for (const auto& clustIt : DSVit) {
-        LogDebug("MTDTrackingRecHitProducer") << "Cluster: size " << clustIt.nClusters() << " " << clustIt.x() << ","
+        LogDebug("MTDTrackingRecHitProducer") << "MergedCluster: size (# of FTLClusters) " << clustIt.nClusters() << " " << clustIt.x() << ","
                                               << clustIt.y() << " " << clustIt.energy() << " " << clustIt.time();
         MTDClusterParameterEstimator::ReturnType tuple = cpe.getParameters(clustIt, *genericDet);
         LocalPoint lp(std::get<0>(tuple));

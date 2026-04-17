@@ -69,9 +69,6 @@ MTDMergedClusterProducer::MTDMergedClusterProducer(const edm::ParameterSet& conf
     produces<FTLMergedClusterCollection>(btlMergedClusterInstance_); 
     produces<FTLMergedClusterCollection>(etlMergedClusterInstance_);
 
-    std::cout << "MTDMergedClusterProducer: Time threshold = " << timeThreshold_ << " sigma" << std::endl;
-    std::cout << "MTDMergedClusterProducer: Energy threshold = " << energyThreshold_ << " MeV" << std::endl;
-    std::cout << "=== MTDMergedClusterProducer: Constructor finished ===" << std::endl;
 }
 
 bool MTDMergedClusterProducer::areTimingCompatible(const FTLCluster* c1, const FTLCluster* c2) {
@@ -249,7 +246,7 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
     e.getByToken(btlClustersToken_, btlClustersHandle);
     e.getByToken(etlClustersToken_, etlClustersHandle);
     
-    std::cout << "MTDMergedClusterProducer: Processing event " << e.id() << std::endl;
+    LogTrace("MTDMergedClusterProducer") << "Processing event " << e.id();
 
     auto btlOutput = std::make_unique<FTLMergedClusterCollection>();
     auto etlOutput = std::make_unique<FTLMergedClusterCollection>();
@@ -258,7 +255,7 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
     std::map<uint32_t, std::vector<FTLMergedCluster>> etlByDet;
 
     if (!btlClustersHandle.isValid() || btlClustersHandle->size() == 0) {
-        std::cout << "No valid BTL clusters found in event" << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "No valid BTL clusters found in event " << e.id();
         e.put(std::move(btlOutput), btlMergedClusterInstance_);
     } else {
         // collect clusters and sort by module ID 
@@ -324,7 +321,7 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
                     BTLDetId adjDetId(adjDetIdRaw);
                     auto it = clusterMap.find(adjDetId);
                     if (it == clusterMap.end()) continue;
-                    //if (processedClusters.count(it->second)) continue;
+                    
                     for (const auto* adjClusterPtr : it->second) {
                         if (processedClusters.count(adjClusterPtr)) {
                             continue;
@@ -365,17 +362,17 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
             for (const auto& mc : vec) filler.push_back(mc);
         }
 
-        std::cout << "About to put " << btlOutput->size() << " MergedClusters into event..." << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "About to put " << btlOutput->size() << " MergedClusters into event " << e.id()<<std::endl;
         e.put(std::move(btlOutput), btlMergedClusterInstance_);
-        std::cout << "=== Successfully put BTL MergedClusters into event ===" << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "=== Successfully put BTL MergedClusters into event ===" << std::endl;
     } // end of BTL processing
 
     // ETL processing - for now just convert to merged cluster format without actual merging:
     if (!etlClustersHandle.isValid() || etlClustersHandle->size() == 0) {
-        std::cout << "No valid ETL clusters found in event" << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "No valid ETL clusters found in event " << e.id() << std::endl;
         e.put(std::move(etlOutput), etlMergedClusterInstance_);
     } else {
-        std::cout << "Processing " << etlClustersHandle->size() << " ETL clusters" << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "Processing " << etlClustersHandle->size() << " ETL clusters in event " << e.id() << std::endl;
         for (const auto& detSet : *etlClustersHandle) {
             for (const auto& cluster : detSet) {
                 if (cluster.energy() < energyThreshold_) continue;
@@ -391,9 +388,9 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
             edmNew::DetSetVector<FTLMergedCluster>::FastFiller filler(*etlOutput, rawDetId);
             for (const auto& mc : vec) filler.push_back(mc);
         }
-        std::cout << "About to put " << etlOutput->size() << " ETL MergedClusters into event..." << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "About to put " << etlOutput->size() << " ETL MergedClusters into event " << e.id() << std::endl;
         e.put(std::move(etlOutput), etlMergedClusterInstance_);
-        std::cout << "=== Successfully put ETL MergedClusters into event ===" << std::endl;
+        LogTrace("MTDMergedClusterProducer") << "=== Successfully put ETL MergedClusters into event ===" << std::endl;
     }
 }
 

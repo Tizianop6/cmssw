@@ -81,9 +81,6 @@ public:
     DetParam const& dp = detParam(det);
     MergedClusterParam mcp(cl);
 
-    std::cout << "[DEBUG INLINE] getParameters called: id=" << cl.id().rawId() 
-              << " xError=" << cl.xError() << std::endl;
-
     auto tuple = std::make_tuple(localPosition(dp, mcp), localError(dp, mcp), 
                                   clusterTime(dp, mcp), clusterTimeError(dp, mcp));
     return tuple;
@@ -104,7 +101,7 @@ private:
   virtual TimeValue clusterTime(DetParam const& dp, ClusterParam& cp) const;
   virtual TimeValueError clusterTimeError(DetParam const& dp, ClusterParam& cp) const;
 
-  // merged cluster versions
+  // MergedCluster versions
   virtual LocalPoint localPosition(DetParam const& dp, MergedClusterParam& mcp) const;
   virtual LocalError localError(DetParam const& dp, MergedClusterParam& mcp) const;
   virtual TimeValue clusterTime(DetParam const& dp, MergedClusterParam& mcp) const;
