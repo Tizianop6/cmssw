@@ -195,6 +195,7 @@ private:
   MonitorElement* meCluRhoRes_simLC_;
   MonitorElement* meCluPhiRes_simLC_;
   MonitorElement* meCluLocalXRes_simLC_;
+  MonitorElement* meCluLocalYRes_simLC_;
 
   MonitorElement* meCluLocalYResZGlobPlus_simLC_;
   MonitorElement* meCluLocalYResZGlobMinus_simLC_;
@@ -708,6 +709,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
             if (matchClu && comp != nullptr) {
               meCluLocalXRes_simLC_->Fill(xlocal_res);
+              meCluLocalYRes_simLC_->Fill(ylocal_res);
 
               if (global_point.z() > 0) {
                 meCluLocalYResZGlobPlus_simLC_->Fill(ylocal_res);
