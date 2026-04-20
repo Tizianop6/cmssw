@@ -32,9 +32,7 @@ public:
     map_.emplace_back(simClus, recoClusVect);
   }
 
-  void post_insert() { 
-    std::sort(map_.begin(), map_.end(), compare); 
-  }
+  void post_insert() { std::sort(map_.begin(), map_.end(), compare); }
 
   bool empty() const { return map_.empty(); }
   size_t size() const { return map_.size(); }
@@ -45,7 +43,8 @@ public:
   const_iterator cend() const { return map_.cend(); }
 
   range equal_range(const MtdSimMergedClusterRef& key) const {
-    auto result = std::equal_range(map_.begin(), map_.end(), value_type(key, std::vector<FTLMergedClusterRef>()), compare);
+    auto result =
+        std::equal_range(map_.begin(), map_.end(), value_type(key, std::vector<FTLMergedClusterRef>()), compare);
     return result;
   }
 
@@ -56,17 +55,13 @@ private:
     const auto& i_detIds = (i.first)->detIds();
     const auto& j_detIds = (j.first)->detIds();
 
-    if(i_detIds.size() == 0 || j_detIds.size() == 0){
+    if (i_detIds.empty() || j_detIds.empty()) {
       return i_detIds.size() < j_detIds.size();
     }
 
-    auto imin = std::min_element(i_detIds.begin(),
-                                 i_detIds.end(),
-                                 [](DetId a, DetId b) { return a < b; });
+    auto imin = std::min_element(i_detIds.begin(), i_detIds.end(), [](DetId a, DetId b) { return a < b; });
 
-    auto jmin = std::min_element(j_detIds.begin(),
-                                 j_detIds.end(),
-                                 [](DetId a, DetId b) { return a < b; });
+    auto jmin = std::min_element(j_detIds.begin(), j_detIds.end(), [](DetId a, DetId b) { return a < b; });
 
     bool result = (*imin < *jmin);
     return result;

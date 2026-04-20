@@ -1,8 +1,10 @@
 #include "SimDataFormats/Associations/interface/MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl.h"
 
 namespace reco {
-  MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl::MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl() {}
-  MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl::~MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl() {}
+  MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl::MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl() {
+  }
+  MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl::~MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl() {
+  }
 
   reco::MergedRecoToSimCollectionMtd MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl::associateRecoToSim(
       const edm::Handle<FTLMergedClusterCollection> &btlRecoClusH,

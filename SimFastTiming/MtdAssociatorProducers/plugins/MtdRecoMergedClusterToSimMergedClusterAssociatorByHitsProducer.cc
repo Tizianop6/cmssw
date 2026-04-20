@@ -38,8 +38,8 @@ private:
   edm::EDGetTokenT<reco::RecoToSimCollectionMtd> recoToSimMap_;
 };
 
-MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer(
-    const edm::ParameterSet &ps){
+MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::
+    MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer(const edm::ParameterSet &ps) {
   geomToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
   topoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
 
@@ -50,11 +50,12 @@ MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::MtdRecoMergedClu
   produces<reco::MtdRecoMergedClusterToSimMergedClusterAssociator>();
 }
 
-MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::~MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer() {}
+MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::
+    ~MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer() {}
 
 void MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::produce(edm::StreamID,
-                                                                      edm::Event &iEvent,
-                                                                      const edm::EventSetup &es) const {
+                                                                             edm::Event &iEvent,
+                                                                             const edm::EventSetup &es) const {
   auto geometryHandle = es.getTransientHandle(geomToken_);
   const MTDGeometry *geom = geometryHandle.product();
 
@@ -76,7 +77,8 @@ void MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::produce(edm
   iEvent.put(std::move(toPut));
 }
 
-void MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::fillDescriptions(edm::ConfigurationDescriptions &cfg) {
+void MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsProducer::fillDescriptions(
+    edm::ConfigurationDescriptions &cfg) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("simToRecoMap", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("recoToSimMap", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));

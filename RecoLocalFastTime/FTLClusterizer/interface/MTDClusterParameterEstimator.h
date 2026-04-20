@@ -46,12 +46,16 @@ public:
         << "getParameters(FTLMergedCluster, GeomDetUnit) not implemented!";
   }
 
-  virtual ReturnType getParameters(const FTLMergedCluster& cl, const GeomDetUnit& det, const LocalTrajectoryParameters& ltp) const {
+  virtual ReturnType getParameters(const FTLMergedCluster& cl,
+                                   const GeomDetUnit& det,
+                                   const LocalTrajectoryParameters& ltp) const {
     throw cms::Exception("MTDClusterParameterEstimator")
         << "getParameters(FTLMergedCluster, GeomDetUnit, LocalTrajectoryParameters) not implemented!";
   }
 
-  virtual ReturnType getParameters(const FTLMergedCluster& cl, const GeomDetUnit& det, const TrajectoryStateOnSurface& tsos) const {
+  virtual ReturnType getParameters(const FTLMergedCluster& cl,
+                                   const GeomDetUnit& det,
+                                   const TrajectoryStateOnSurface& tsos) const {
     return getParameters(cl, det, tsos.localParameters());
   }
 

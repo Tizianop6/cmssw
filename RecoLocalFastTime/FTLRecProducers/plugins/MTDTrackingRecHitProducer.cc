@@ -107,14 +107,16 @@ void MTDTrackingRecHitProducer::produce(edm::StreamID, edm::Event& evt, const ed
 #endif
 
       for (const auto& clustIt : DSVit) {
-        LogDebug("MTDTrackingRecHitProducer") << "MergedCluster: size (# of FTLClusters) " << clustIt.nClusters() << " " << clustIt.x() << ","
-                                              << clustIt.y() << " " << clustIt.energy() << " " << clustIt.time();
+        LogDebug("MTDTrackingRecHitProducer")
+            << "MergedCluster: size (# of FTLClusters) " << clustIt.nClusters() << " " << clustIt.x() << ","
+            << clustIt.y() << " " << clustIt.energy() << " " << clustIt.time();
         MTDClusterParameterEstimator::ReturnType tuple = cpe.getParameters(clustIt, *genericDet);
         LocalPoint lp(std::get<0>(tuple));
         LocalError le(std::get<1>(tuple));
 
         // Create a persistent edm::Ref to the cluster
-        edm::Ref<edmNew::DetSetVector<FTLMergedCluster>, FTLMergedCluster> cluster = edmNew::makeRefTo(theInput, &clustIt);
+        edm::Ref<edmNew::DetSetVector<FTLMergedCluster>, FTLMergedCluster> cluster =
+            edmNew::makeRefTo(theInput, &clustIt);
         // Make a RecHit and add it to the DetSet
         MTDTrackingRecHit hit(lp, le, *genericDet, cluster);
         LogDebug("MTDTrackingRecHitProducer")

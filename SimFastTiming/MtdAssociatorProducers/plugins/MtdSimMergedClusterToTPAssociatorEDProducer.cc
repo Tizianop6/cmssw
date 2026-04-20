@@ -42,7 +42,8 @@ MtdSimMergedClusterToTPAssociatorEDProducer::MtdSimMergedClusterToTPAssociatorED
   produces<reco::MergedSimToTPCollectionMtd>();
   produces<reco::TPToMergedSimCollectionMtd>();
 
-  simMergedClustersToken_ = consumes<MtdSimMergedClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimMergedClustersTag"));
+  simMergedClustersToken_ =
+      consumes<MtdSimMergedClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimMergedClustersTag"));
   tpToken_ = consumes<TrackingParticleCollection>(pset.getParameter<edm::InputTag>("trackingParticlesTag"));
   associatorToken_ = consumes<reco::MtdSimMergedClusterToTPAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
@@ -55,8 +56,8 @@ MtdSimMergedClusterToTPAssociatorEDProducer::~MtdSimMergedClusterToTPAssociatorE
 
 // ------------ method called to produce the data  ------------
 void MtdSimMergedClusterToTPAssociatorEDProducer::produce(edm::StreamID,
-                                                         edm::Event &iEvent,
-                                                         const edm::EventSetup &iSetup) const {
+                                                          edm::Event &iEvent,
+                                                          const edm::EventSetup &iSetup) const {
   using namespace edm;
 
   edm::Handle<reco::MtdSimMergedClusterToTPAssociator> theAssociator;

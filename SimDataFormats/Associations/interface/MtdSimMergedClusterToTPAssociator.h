@@ -25,14 +25,16 @@ namespace reco {
 
     // ---------- const member functions ---------------------
     /// Associate MtdSimMergedCluster to TrackingParticle
-    reco::MergedSimToTPCollectionMtd associateSimToTP(const edm::Handle<MtdSimMergedClusterCollection> &simClusH,
-                                                const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
+    reco::MergedSimToTPCollectionMtd associateSimToTP(
+        const edm::Handle<MtdSimMergedClusterCollection> &simClusH,
+        const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
       return m_impl->associateSimToTP(simClusH, trackingParticleH);
     };
 
     /// Associate TrackingParticle to MtdSimMergedCluster
-    reco::TPToMergedSimCollectionMtd associateTPToSim(const edm::Handle<MtdSimMergedClusterCollection> &simClusH,
-                                                const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
+    reco::TPToMergedSimCollectionMtd associateTPToSim(
+        const edm::Handle<MtdSimMergedClusterCollection> &simClusH,
+        const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
       return m_impl->associateTPToSim(simClusH, trackingParticleH);
     };
 

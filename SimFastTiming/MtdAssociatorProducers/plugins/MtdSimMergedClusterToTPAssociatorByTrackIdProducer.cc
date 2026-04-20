@@ -45,15 +45,15 @@ MtdSimMergedClusterToTPAssociatorByTrackIdProducer::MtdSimMergedClusterToTPAssoc
 MtdSimMergedClusterToTPAssociatorByTrackIdProducer::~MtdSimMergedClusterToTPAssociatorByTrackIdProducer() {}
 
 void MtdSimMergedClusterToTPAssociatorByTrackIdProducer::produce(edm::StreamID,
-                                                                edm::Event &iEvent,
-                                                                const edm::EventSetup &es) const {
-
+                                                                 edm::Event &iEvent,
+                                                                 const edm::EventSetup &es) const {
   auto simToTPMapHandle = iEvent.getHandle(simToTPMapToken_);
   reco::SimToTPCollectionMtd simToTPMap = *simToTPMapHandle;
   auto tpToSimMapHandle = iEvent.getHandle(tpToSimMapToken_);
   reco::TPToSimCollectionMtd tpToSimMap = *tpToSimMapHandle;
 
-  auto impl = std::make_unique<MtdSimMergedClusterToTPAssociatorByTrackIdImpl>(iEvent.productGetter(), simToTPMap, tpToSimMap);
+  auto impl =
+      std::make_unique<MtdSimMergedClusterToTPAssociatorByTrackIdImpl>(iEvent.productGetter(), simToTPMap, tpToSimMap);
   auto toPut = std::make_unique<reco::MtdSimMergedClusterToTPAssociator>(std::move(impl));
   iEvent.put(std::move(toPut));
 }

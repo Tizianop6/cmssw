@@ -43,12 +43,14 @@ MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::MtdRecoMergedCluster
 
   btlRecoClustersToken_ = consumes<FTLMergedClusterCollection>(pset.getParameter<edm::InputTag>("btlRecoClustersTag"));
   etlRecoClustersToken_ = consumes<FTLMergedClusterCollection>(pset.getParameter<edm::InputTag>("etlRecoClustersTag"));
-  simMergedClustersToken_ = consumes<MtdSimMergedClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimMergedClustersTag"));
+  simMergedClustersToken_ =
+      consumes<MtdSimMergedClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimMergedClustersTag"));
   associatorToken_ =
       consumes<reco::MtdRecoMergedClusterToSimMergedClusterAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
 
-MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::~MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer() {}
+MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::~MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer() {
+}
 
 //
 // member functions
@@ -56,8 +58,8 @@ MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::~MtdRecoMergedCluste
 
 // ------------ method called to produce the data  ------------
 void MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::produce(edm::StreamID,
-                                                                  edm::Event &iEvent,
-                                                                  const edm::EventSetup &iSetup) const {
+                                                                         edm::Event &iEvent,
+                                                                         const edm::EventSetup &iSetup) const {
   using namespace edm;
 
   edm::Handle<reco::MtdRecoMergedClusterToSimMergedClusterAssociator> theAssociator;
@@ -90,7 +92,7 @@ void MtdRecoMergedClusterToSimMergedClusterAssociatorEDProducer::fillDescription
   desc.add<edm::InputTag>("associator", edm::InputTag("mtdRecoMergedClusterToSimMergedClusterAssociatorByHits"));
   desc.add<edm::InputTag>("mtdSimMergedClustersTag", edm::InputTag("mtdSimMergedClusterProducer", ""));
   desc.add<edm::InputTag>("btlRecoClustersTag", edm::InputTag("mtdMergedClusters", "FTLBarrel"));
-  desc.add<edm::InputTag>("etlRecoClustersTag", edm::InputTag("mtdMergedClusters", "FTLEndcap")); 
+  desc.add<edm::InputTag>("etlRecoClustersTag", edm::InputTag("mtdMergedClusters", "FTLEndcap"));
 
   cfg.add("mtdRecoMergedClusterToSimMergedClusterAssociationDefault", desc);
 }
