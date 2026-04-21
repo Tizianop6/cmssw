@@ -58,7 +58,7 @@ void traverseDecayTree(const edm::Ref<TrackingParticleCollection>& tpRef,
   action(tpRef);
 
   const auto& decayVtxs = tpRef->decayVertices();
-  if (decayVtxs.size() > 0) {
+  if (!decayVtxs.empty()) {
     // iterate using begin, end explicitly
     for (auto it = decayVtxs.begin(); it != decayVtxs.end(); ++it) {
       const auto& decayVtx = *it;

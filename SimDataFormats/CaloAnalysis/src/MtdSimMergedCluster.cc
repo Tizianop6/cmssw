@@ -1,4 +1,5 @@
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimMergedCluster.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include <algorithm>
 #include <iostream>
 
@@ -88,7 +89,7 @@ std::vector<DetId> MtdSimMergedCluster::detIds() const {
     const auto& clusterDetIds = clu->hits_and_fractions();
     for (const auto& hitFrac : clusterDetIds) {
       // check if hitFrac.first is already in ids
-      if (std::find(ids.begin(), ids.end(), hitFrac.first) == ids.end()) {
+      if (std::find(ids.begin(), ids.end(), DetId(hitFrac.first)) == ids.end()) {
         // if not, add it to the list
         ids.push_back(hitFrac.first);
       }
@@ -115,7 +116,7 @@ std::vector<std::pair<float, LocalPoint>> MtdSimMergedCluster::getHitTimesAndPos
                      float hitTime = time_pair.second;
                      LocalPoint hitPosition = pos_pair.second;
                      if (time_pair.first != pos_pair.first) {
-                       std::cout << "Warning: Mismatched detIds in hit times and positions!" << std::endl;
+                       LogDebug("MtdSimMergedCluster") << "Warning: Mismatched detIds in hit times and positions!";
                        return std::make_pair(-1.0f, LocalPoint(-999, -999, -999));
                      } else {
                        return std::make_pair(hitTime, hitPosition);

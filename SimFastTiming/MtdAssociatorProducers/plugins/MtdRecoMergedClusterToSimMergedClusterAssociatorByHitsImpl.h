@@ -14,8 +14,6 @@ class MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsImpl
     : public reco::MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl {
 public:
   explicit MtdRecoMergedClusterToSimMergedClusterAssociatorByHitsImpl(edm::EDProductGetter const &,
-                                                                      double,
-                                                                      double,
                                                                       mtd::MTDGeomUtil &,
                                                                       reco::SimToRecoCollectionMtd,
                                                                       reco::RecoToSimCollectionMtd);

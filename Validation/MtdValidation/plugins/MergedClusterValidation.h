@@ -38,7 +38,7 @@
 class MergedClusterValidation : public DQMEDAnalyzer {
 public:
   explicit MergedClusterValidation(const edm::ParameterSet&);
-  ~MergedClusterValidation() = default;
+  ~MergedClusterValidation() override = default;
 
 private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;

@@ -442,7 +442,7 @@ void MergedClusterValidation_withAssociationMaps::analyze(const edm::Event& iEve
                   << ", trackIdOffset = " << simRef->clusters()[0]->trackIdOffset()
                   << " (nClusters = " << simRef->clusters().size() << ")" << std::endl;
         std::cout << "                        particles =";
-        if (simRef->trackingParticles().size() > 0) {
+        if (!simRef->trackingParticles().empty()) {
           for (auto const& p : simRef->trackingParticles()) {
             std::cout << " " << p->pdgId();
           }

@@ -76,8 +76,9 @@ reco::MergedRecoToSimCollectionMtd MtdRecoMergedClusterToSimMergedClusterAssocia
                   << "  No sim merged clusters associated to this sim layer cluster";
               continue;
             }
-
-            simClusterRefs.push_back(simMergedClusterRef);
+            for (const auto& simMergedClusterRef : simMergedClusters->second) {
+              simClusterRefs.push_back(simMergedClusterRef);
+            }
           }
         }
 

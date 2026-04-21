@@ -40,7 +40,7 @@
 class MergedClusterValidation_withAssociationMaps : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
   explicit MergedClusterValidation_withAssociationMaps(const edm::ParameterSet&);
-  ~MergedClusterValidation_withAssociationMaps() = default;
+  ~MergedClusterValidation_withAssociationMaps() override = default;
 
 private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;

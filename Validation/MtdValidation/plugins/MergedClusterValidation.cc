@@ -994,7 +994,7 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
       bool isPrimary = true;
       if (ancestor.status() != 1)
         isPrimary = false;
-      if (ancestor.g4Tracks().size() > 0) {
+      if (!ancestor.g4Tracks().empty()) {
         if (ancestor.g4Tracks().front().vertIndex() != 0)
           isPrimary = false;
       } else {
