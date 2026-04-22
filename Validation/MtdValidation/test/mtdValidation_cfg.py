@@ -61,9 +61,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        #'file:/eos/user/p/pakrap/MTD/CMSSW_15_0_0_pre2/src/Validation/MtdValidation/29706.0_SinglePiFlatPt0p7To10+Run4D110/1000evt/step3.root'
-        'file:/eos/user/p/pakrap/MTD/CMSSW_ASSOCMAP/src/Validation/MtdValidation/step3.root' # single pi
-        #'file:/eos/user/p/pakrap/MTD/CMSSW_ASSOCMAP/src/RecoLocalFastTime/FTLClusterizer/output.root' # single pi
+        'file:step3.root' 
     )
 )
 
