@@ -41,6 +41,8 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
+
 #include <memory>
 #include <set>
 
@@ -84,6 +86,7 @@ private:
   double minEnergy_;
 
   const edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
+  const edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
 };
 
 MtdSimMergedClusterProducer::MtdSimMergedClusterProducer(const edm::ParameterSet& iConfig)
@@ -96,7 +99,8 @@ MtdSimMergedClusterProducer::MtdSimMergedClusterProducer(const edm::ParameterSet
       mtdSimLayerClustersToken_(
           consumes<MtdSimLayerClusterCollection>(iConfig.getParameter<edm::InputTag>("mtdSimLayerClusters"))),
       minEnergy_(iConfig.getParameter<double>("minClusterEnergy")),
-      mtdtopoToken_(esConsumes<MTDTopology, MTDTopologyRcd>()) {
+      mtdtopoToken_(esConsumes<MTDTopology, MTDTopologyRcd>()),
+      mtdgeoToken_(esConsumes<MTDGeometry, MTDDigiGeometryRecord>()) {
   produces<MtdSimMergedClusterCollection>();
 }
 
@@ -104,6 +108,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
   // Get topology for navigation
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
+  auto const& geom = iSetup.getData(mtdgeoToken_);
 
   // Create output collection (MtdSimMergedCluster)
   auto outputClusters = std::make_unique<MtdSimMergedClusterCollection>();
@@ -386,7 +391,8 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               bool isBackscatterMergedcluster = mergedClusterClusters[0]->trackIdOffset() == 3;
               bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->trackIdOffset() == 3);
               bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->trackIdOffset() != 3);
-              if (areBothBackscatter || areBothNotBackscatter) {
+              bool areBothPrimary = (mergedClusterClusters[0]->trackIdOffset() == 0) && (adjCluster->trackIdOffset() == 0);
+              if ((areBothBackscatter || areBothNotBackscatter) && !areBothPrimary) {
                 LogDebug("MtdSimMergedClusterProducer")
                     << "  CLUSTER MERGING: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
                     << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
@@ -439,6 +445,47 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
       }
     }
 
+    // --- Calculate energy-weighted position ---
+    double weightedGlobalX = 0;
+    double weightedGlobalY = 0;
+    double weightedGlobalZ = 0;
+    float totalEnergy = 0;
+
+    for (const auto& simLCptr : mergedClusterClusters) {
+        const MtdSimLayerCluster& simLC = *simLCptr;
+        float energy = simLC.simLCEnergy();
+        totalEnergy += energy;
+
+        // Use the first hit's DetId for geometry lookup
+        if (!simLC.detIds_and_rows().empty()) {
+            DetId detId = simLC.detIds_and_rows()[0].first;
+            const GeomDet* det = geom.idToDetUnit(detId);
+            if (det) {
+                const GlobalPoint& gp = det->surface().toGlobal(simLC.simLCPos());
+                weightedGlobalX += static_cast<double>(energy) * gp.x();
+                weightedGlobalY += static_cast<double>(energy) * gp.y();
+                weightedGlobalZ += static_cast<double>(energy) * gp.z();
+            }
+        }
+    }
+
+    GlobalPoint avgGlobal(0., 0., 0.);
+    if (totalEnergy > 0) {
+        avgGlobal = GlobalPoint(weightedGlobalX / totalEnergy, weightedGlobalY / totalEnergy, weightedGlobalZ / totalEnergy);
+    }
+
+    // Convert back to local coordinates of the seed cluster
+    if (!mergedClusterClusters.empty()) {
+        DetId seedDetId = mergedClusterClusters.front()->detIds_and_rows()[0].first;
+        const GeomDet* seedDet = geom.idToDetUnit(seedDetId);
+        if (seedDet) {
+            LocalPoint lp = seedDet->surface().toLocal(avgGlobal);
+            simMergedCluster.setSimPos(lp);
+        }
+    }
+    // --- End position calculation ---
+
+
     outputClusters->push_back(simMergedCluster);
     LogDebug("MtdSimMergedClusterProducer")
         << "Created MergedCluster from " << mergedClusterClusters.size()
@@ -447,8 +494,6 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
 
   // For ETL: copy paste of original MtdSimLayerClusters
   for (const auto* clusterPointer : allsimETLLClusters) {
-    const auto& cluster = *clusterPointer;
-
     MtdSimMergedCluster simMergedCluster;
     // create simLC reference by finding the index in the original collection
     size_t clusterIndex = clusterPointer - &(*simLClusters->begin());

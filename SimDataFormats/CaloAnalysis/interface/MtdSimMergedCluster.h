@@ -33,6 +33,9 @@ public:
   /// Position of the earliest cluster
   LocalPoint simPos() const;
 
+  /// Set position of the merged cluster
+  void setSimPos(const LocalPoint& pos) { simMC_pos_ = pos; }
+
   /// detId of earliest cluster
   DetId simDetId() const;
 
@@ -53,6 +56,8 @@ private:
   MtdSimLayerClusterRefVector clusters_;
   TrackingParticleRefVector trackingParticles_;
   TrackingParticleRef mainTrack_;
+  LocalPoint simMC_pos_;
+  
 };
 
 #endif

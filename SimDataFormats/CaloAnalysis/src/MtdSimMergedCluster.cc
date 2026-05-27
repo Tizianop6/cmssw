@@ -30,20 +30,28 @@ void MtdSimMergedCluster::addCluster(const MtdSimLayerClusterRef& clusterRef, co
 }
 
 float MtdSimMergedCluster::simTime() const {
-  // if(clusters_.empty()) {
-  //     return -999;
+
+  // FIRST IMPLEMENTATION: take position of earliest hit across all clusters
+  // auto hitTimesAndPositions = getHitTimesAndPositions();
+  // if (hitTimesAndPositions.empty()) {
+  //   return -999;
   // } else {
-  //     // FIRST IMPLEMENTATION: take time of earliest cluster
-  //     return (*clusters_.begin())->simLCTime();
+  //   return hitTimesAndPositions.front().first;
   // }
 
-  // ALT IMPLEMENTATION: take position of earliest hit across all clusters
-  auto hitTimesAndPositions = getHitTimesAndPositions();
-  if (hitTimesAndPositions.empty()) {
-    return -999;
+  // Instead use energy-weighted average of cluster times:
+  float time = 0;
+  float totalEnergy = 0;
+  for (const auto& clu : clusters_) {
+    totalEnergy += clu->simLCEnergy();
+    time += clu->simLCTime() * clu->simLCEnergy();
+  } 
+  if (totalEnergy > 0) {
+    return time / totalEnergy;
   } else {
-    return hitTimesAndPositions.front().first;
+    return -999;
   }
+  
 }
 
 LocalPoint MtdSimMergedCluster::simPos() const {
@@ -54,6 +62,8 @@ LocalPoint MtdSimMergedCluster::simPos() const {
     // // (TO BE CHANGED: take energy-weighted position?)
     return (*clusters_.begin())->simLCPos();
   }
+  
+
 
   // ALT IMPLEMENTATION: take position of earliest hit across all clusters
   /*auto hitTimesAndPositions = getHitTimesAndPositions();
@@ -132,6 +142,8 @@ std::vector<std::pair<float, LocalPoint>> MtdSimMergedCluster::getHitTimesAndPos
 
   return hitTimesAndPositions;
 }
+
+
 
 std::ostream& operator<<(std::ostream& s, const MtdSimMergedCluster& sc) {
   s << "MtdSimMergedCluster with " << sc.clusters_.size()
