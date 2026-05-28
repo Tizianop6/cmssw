@@ -5,4 +5,4 @@
 
 #include "DataFormats/DetId/interface/DetIdVector.h"
 #include "DataFormats/DetId/interface/DetIdCollection.h"
-#include "DataFormats/Common/interface/DetSetVector.h"
+#include "DataFormats/Common/interface/Wrapper.h"

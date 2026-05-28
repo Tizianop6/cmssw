@@ -178,11 +178,12 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
   std::vector<const MtdSimLayerCluster*> allsimETLLClusters;
 
   for (const auto& cluster : *simLClusters) {
-    if (!cluster.detIds_and_rows().empty() &&
-        MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::ETL) {
-      allsimETLLClusters.push_back(&cluster);
-    } else {
-      allsimLClusters.push_back(&cluster);
+    if (!cluster.detIds_and_rows().empty()){
+      if (MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::ETL) {
+        allsimETLLClusters.push_back(&cluster);
+      } else if (MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::BTL) {
+        allsimLClusters.push_back(&cluster);
+      }
     }
   }
 
@@ -196,15 +197,9 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               BTLDetId idA(detIdsA[0].first);
               BTLDetId idB(detIdsB[0].first);
 
-              // side -> rod -> module
-              if (idA.zside() != idB.zside())
-                return idA.zside() < idB.zside();
-              if (idA.mtdRR() != idB.mtdRR())
-                return idA.mtdRR() < idB.mtdRR();
-
               auto [iphiA, ietaA] =
-                  topology->btlIndex(idA.geographicalId(BTLDetId::CrysLayout::v3).rawId());  //uint32_t
-              auto [iphiB, ietaB] = topology->btlIndex(idB.geographicalId(BTLDetId::CrysLayout::v3).rawId());
+                  topology->btlIndex(idA.geographicalId(BTLDetId::CrysLayout::v4).rawId());  //uint32_t
+              auto [iphiB, ietaB] = topology->btlIndex(idB.geographicalId(BTLDetId::CrysLayout::v4).rawId());
 
               if (iphiA != iphiB)
                 return iphiA < iphiB;
@@ -237,7 +232,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
       // retrieve detId from first hit
       BTLDetId detId = cluster->detIds_and_rows()[0].first;
       // retrieve GEOGRAPHICAL id
-      BTLDetId geoDetId = detId.geographicalId(BTLDetId::CrysLayout::v3);
+      BTLDetId geoDetId = detId.geographicalId(BTLDetId::CrysLayout::v4);
 
       clusterMap[geoDetId].push_back(cluster);
     }
@@ -300,13 +295,13 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
 
     // Get topology indices - use geographicalId (module-level) with crystal layout
-    std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.geographicalId(BTLDetId::CrysLayout::v3).rawId());
+    std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
     uint32_t iphi = indices.first;
     uint32_t ieta = indices.second;
     LogDebug("MtdSimMergedClusterProducer") << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta;
 
     // ETA DIRECTION MERGING
-    std::vector<int> etaOffsets = {1, 0, -1};
+    std::vector<int> etaOffsets = {1, 0};
     for (int etaOffset : etaOffsets) {
       if ((hasEdgeHitCurrent && iphi != std::numeric_limits<uint32_t>::max() &&
            ieta != std::numeric_limits<uint32_t>::max()) ||
@@ -368,31 +363,53 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
           if (hasOppositeEdgeHit || (areClustersOverlapping && etaOffset == 0)) {
             // check for common ancestor
             bool hasCommonAncestor = false;
-            const auto& simLayerClusters1 =
+            bool areBothPrimary = (mergedClusterClusters[0]->trackIdOffset() == 0) && (adjCluster->trackIdOffset() == 0);
+            bool areBothPrimaryfromSameTP = false;
+          
+            // if both clusters are primary, check if they come from the same TP, otherwise keep them separate, even if they have a common ancestor
+            if (areBothPrimary){
+              const auto& simLayerClusters1 =
                 simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
-            const auto& simLayerClusters2 =
+              const auto& simLayerClusters2 =
                 simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, adjCluster - &(*simLClusters->begin())));
-            if (simLayerClusters1 != simClusToTPMap->end() && simLayerClusters2 != simClusToTPMap->end()) {
-              for (const auto& tpRef1 : simLayerClusters1->val) {
-                for (const auto& tpRef2 : simLayerClusters2->val) {
-                  if (ancestorMap[tpRef1] == ancestorMap[tpRef2]) {
-                    hasCommonAncestor = true;
-                    break;
+              if (simLayerClusters1 != simClusToTPMap->end() && simLayerClusters2 != simClusToTPMap->end()) {
+                  for (const auto& tpRef1 : simLayerClusters1->val) {
+                    for (const auto& tpRef2 : simLayerClusters2->val) {
+                      if (tpRef1 == tpRef2) {
+                        areBothPrimaryfromSameTP = true;
+                        break;
+                      }
+                    }
                   }
-                }
-                if (hasCommonAncestor)
-                  break;
               }
             }
-
-            if (hasCommonAncestor) {
+            else { // if at least one of the clusters is not primary, check for common ancestor and merge if they share one, regardless of whether they come from the same TP or not
+              const auto& simLayerClusters1 =
+                  simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
+              const auto& simLayerClusters2 =
+                  simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, adjCluster - &(*simLClusters->begin())));
+              if (simLayerClusters1 != simClusToTPMap->end() && simLayerClusters2 != simClusToTPMap->end()) {
+                for (const auto& tpRef1 : simLayerClusters1->val) {
+                  for (const auto& tpRef2 : simLayerClusters2->val) {
+                    if (ancestorMap[tpRef1] == ancestorMap[tpRef2]) {
+                      hasCommonAncestor = true;
+                      break;
+                    }
+                  }
+                  if (hasCommonAncestor)
+                    break;
+                }
+              }
+            }
+            if (hasCommonAncestor || areBothPrimaryfromSameTP) {
               LogDebug("MtdSimMergedClusterProducer")
                   << "  -> MERGING ETA neighbor: " << cluId.rawId() << " with " << adjDetId.rawId();
+              int iphi_adj, ieta_adj;
+              std::tie(iphi_adj, ieta_adj) = topology->btlIndex(adjDetId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
               bool isBackscatterMergedcluster = mergedClusterClusters[0]->trackIdOffset() == 3;
               bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->trackIdOffset() == 3);
               bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->trackIdOffset() != 3);
-              bool areBothPrimary = (mergedClusterClusters[0]->trackIdOffset() == 0) && (adjCluster->trackIdOffset() == 0);
-              if ((areBothBackscatter || areBothNotBackscatter) && !areBothPrimary) {
+              if (areBothBackscatter || areBothNotBackscatter || areBothPrimaryfromSameTP) {
                 LogDebug("MtdSimMergedClusterProducer")
                     << "  CLUSTER MERGING: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
                     << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"

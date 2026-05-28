@@ -277,18 +277,24 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       }
     }
 
-    // sorting by side, rod and module
-    std::sort(allClusters.begin(), allClusters.end(), [](const FTLCluster* a, const FTLCluster* b) {
-      BTLDetId idA = a->id();
-      BTLDetId idB = b->id();
+    // sorting by rod and module
 
-      if (idA.zside() != idB.zside())
-        return idA.zside() < idB.zside();
-      if (idA.mtdRR() != idB.mtdRR())
-        return idA.mtdRR() < idB.mtdRR();
-      return idA.module() < idB.module();
+      std::sort(allClusters.begin(), allClusters.end(), [&topology](const FTLCluster* a, const FTLCluster* b) {
+      BTLDetId idA(a->id());
+      BTLDetId idB(b->id());  
+      auto [iphiA, ietaA] = topology->btlIndex(idA.geographicalId(BTLDetId::CrysLayout::v4).rawId());
+      auto [iphiB, ietaB] = topology->btlIndex(idB.geographicalId(BTLDetId::CrysLayout::v4).rawId());
+      
+      if (iphiA != iphiB) {
+        return iphiA < iphiB;
+      }
+      if (ietaA != ietaB) {
+        return ietaA < ietaB;
+      }
+      return a->id().rawId() < b->id().rawId();
     });
 
+    
     std::set<const FTLCluster*> processedClusters;
 
     // Process clusters
@@ -301,62 +307,65 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       std::vector<const FTLCluster*> mergedClusterClusters = {cluster};
       processedClusters.insert(cluster);
 
+      // Get topology indices
+      std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.rawId());
+      uint32_t iphi = indices.first;
+      uint32_t ieta = indices.second;
+      
+      if ((ieta == 48) || (ieta == 96)) { // Don't merge clusters in eta=0 due to gap in detectors, merging would be unphysical, just keep FTLClusters as they are. Also don't merge at the end of the trays, there is nothing to merge with
+        FTLMergedCluster mergedCluster = mergeClusters(mergedClusterClusters, cluId, geom, btlClustersHandle);
+        mergedByDet[mergedCluster.id().rawId()].push_back(std::move(mergedCluster));
+        continue;  
+      }
+
+
       // Check for edge hits in current cluster
-      bool edgeHitIn0 = false;
       bool edgeHitIn15 = false;
 
       for (int i = 0; i < cluster->size(); ++i) {
         auto hit = cluster->hit(i);
         int hit_col = hit.y();
-        if (hit_col == 0) {
-          edgeHitIn0 = true;
-        } else if (hit_col == 15) {
+        if (hit_col == 15) {
           edgeHitIn15 = true;
         }
       }
-      bool hasEdgeHitCurrent = edgeHitIn0 || edgeHitIn15;
-      // Get topology indices
-      std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.rawId());
-      uint32_t iphi = indices.first;
-      uint32_t ieta = indices.second;
-
+      
       // ETA DIRECTION MERGING
-      if (hasEdgeHitCurrent && iphi != std::numeric_limits<uint32_t>::max() &&
+      if (edgeHitIn15 && iphi != std::numeric_limits<uint32_t>::max() &&
           ieta != std::numeric_limits<uint32_t>::max()) {
-        std::vector<int> etaOffsets = {1, -1};
-        for (int etaOffset : etaOffsets) {
-          uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
-          if (adjDetIdRaw == 0)
-            continue;
+        //std::vector<int> etaOffsets = {1, -1};
+        int etaOffset = 1;
+        uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
+        if (adjDetIdRaw != 0){
 
           BTLDetId adjDetId(adjDetIdRaw);
           auto it = clusterMap.find(adjDetId);
-          if (it == clusterMap.end())
-            continue;
+          if (it != clusterMap.end()){
 
-          for (const auto* adjClusterPtr : it->second) {
-            if (processedClusters.count(adjClusterPtr)) {
-              continue;
-            }
-
-            const FTLCluster* adjCluster = adjClusterPtr;
-
-            // Check for opposite edge hit
-            bool hasOppositeEdgeHit = false;
-            for (int j = 0; j < adjCluster->size(); ++j) {
-              auto hit = adjCluster->hit(j);
-              int hit_col = hit.y();
-              if ((edgeHitIn0 && hit_col == 15 && etaOffset == -1) || (edgeHitIn15 && hit_col == 0 && etaOffset == 1)) {
-                hasOppositeEdgeHit = true;
-                break;
+            for (const auto* adjClusterPtr : it->second) {
+              if (processedClusters.count(adjClusterPtr)) {
+                continue;
               }
-            }
 
-            bool timeOk = areTimingCompatible(cluster, adjCluster);
-            if (hasOppositeEdgeHit && timeOk) {
-              mergedClusterClusters.push_back(adjCluster);
-              // mark neighbor as processed immediately to avoid reuse
-              processedClusters.insert(adjCluster);
+              const FTLCluster* adjCluster = adjClusterPtr;
+
+              // Check for opposite edge hit
+              bool hasOppositeEdgeHit = false;
+              for (int j = 0; j < adjCluster->size(); ++j) {
+                auto hit = adjCluster->hit(j);
+                int hit_col = hit.y();
+                if (edgeHitIn15 && (hit_col == 0)) {
+                  hasOppositeEdgeHit = true;
+                  break;
+                }
+              }
+
+              bool timeOk = areTimingCompatible(cluster, adjCluster);
+              if (hasOppositeEdgeHit && timeOk) {
+                mergedClusterClusters.push_back(adjCluster);
+                // mark neighbor as processed immediately to avoid reuse
+                processedClusters.insert(adjCluster);
+              }
             }
           }
         }
@@ -366,7 +375,6 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       FTLMergedCluster mergedCluster = mergeClusters(mergedClusterClusters, cluId, geom, btlClustersHandle);
       mergedByDet[mergedCluster.id().rawId()].push_back(std::move(mergedCluster));
     }
-
     for (auto const& entry : mergedByDet) {
       uint32_t rawDetId = entry.first;
       const auto& vec = entry.second;
