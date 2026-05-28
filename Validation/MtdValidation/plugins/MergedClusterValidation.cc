@@ -605,7 +605,7 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
           for (auto assocIt = currentSimClustersRange.first; assocIt != currentSimClustersRange.second; ++assocIt) {
             const auto& simClusterRefs = assocIt->second;
             for (const auto& simClusterRef : simClusterRefs) {
-              //if (simClusterRef->trackIdOffset() != 0) continue; // Only direct matches
+              //if (simClusterRef->hitProdType() != 0) continue; // Only direct matches
 
               auto tpRefs = sim2tpAssociationMap.find(simClusterRef);
               if (tpRefs != sim2tpAssociationMap.end()) {
@@ -624,7 +624,7 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
           for (auto assocIt = adjacentSimClustersRange.first; assocIt != adjacentSimClustersRange.second; ++assocIt) {
             const auto& simClusterRefs = assocIt->second;
             for (const auto& simClusterRef : simClusterRefs) {
-              //if (simClusterRef->trackIdOffset() != 0) continue;
+              //if (simClusterRef->hitProdType() != 0) continue;
 
               auto tpRefs = sim2tpAssociationMap.find(simClusterRef);
               if (tpRefs != sim2tpAssociationMap.end()) {
@@ -909,20 +909,20 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
       energy_perCluster.push_back(convertUnitsTo(0.001_MeV, cluster.simLCEnergy()));  // convert GeV to MeV
       time_perCluster.push_back(cluster.simLCTime());
 
-      // Store cluster type (trackIdOffset)
-      clusterType_perCluster.push_back(cluster.trackIdOffset());
+      // Store cluster type (hitProdType)
+      clusterType_perCluster.push_back(cluster.hitProdType());
 
       // Fill histograms
       h_simmc_logEnergy_perCluster_->Fill(log10(convertUnitsTo(0.001_MeV, cluster.simLCEnergy())));
       h_simmc_time_perCluster_->Fill(cluster.simLCTime());
-      h_simmc_clusterType_->Fill(cluster.trackIdOffset());
+      h_simmc_clusterType_->Fill(cluster.hitProdType());
 
 #if DEBUG > 0
       std::cout << "\t\t cluster detId: " << clusterDetId.rawId() << " iPhi: " << cluster_indices.first
                 << " iEta: " << cluster_indices.second << " E: " << convertUnitsTo(0.001_MeV, cluster.simLCEnergy())
                 << " MeV"
                 << " t: " << cluster.simLCTime() << " ns"
-                << " trackIdOffset: " << cluster.trackIdOffset() << std::endl;
+                << " hitProdType: " << cluster.hitProdType() << std::endl;
 #endif
     }
 

@@ -363,7 +363,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
           if (hasOppositeEdgeHit || (areClustersOverlapping && etaOffset == 0)) {
             // check for common ancestor
             bool hasCommonAncestor = false;
-            bool areBothPrimary = (mergedClusterClusters[0]->trackIdOffset() == 0) && (adjCluster->trackIdOffset() == 0);
+            bool areBothPrimary = (mergedClusterClusters[0]->hitProdType() == 0) && (adjCluster->hitProdType() == 0);
             bool areBothPrimaryfromSameTP = false;
           
             // if both clusters are primary, check if they come from the same TP, otherwise keep them separate, even if they have a common ancestor
@@ -406,14 +406,14 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
                   << "  -> MERGING ETA neighbor: " << cluId.rawId() << " with " << adjDetId.rawId();
               int iphi_adj, ieta_adj;
               std::tie(iphi_adj, ieta_adj) = topology->btlIndex(adjDetId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
-              bool isBackscatterMergedcluster = mergedClusterClusters[0]->trackIdOffset() == 3;
-              bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->trackIdOffset() == 3);
-              bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->trackIdOffset() != 3);
+              bool isBackscatterMergedcluster = mergedClusterClusters[0]->hitProdType() == 3;
+              bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->hitProdType() == 3);
+              bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->hitProdType() != 3);
               if (areBothBackscatter || areBothNotBackscatter || areBothPrimaryfromSameTP) {
                 LogDebug("MtdSimMergedClusterProducer")
-                    << "  CLUSTER MERGING: offset of first = " << mergedClusterClusters[0]->trackIdOffset()
+                    << "  CLUSTER MERGING: prodType of first = " << mergedClusterClusters[0]->hitProdType()
                     << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
-                    << ", adjCluster->trackIdOffset() = " << adjCluster->trackIdOffset()
+                    << ", adjCluster->hitProdType() = " << adjCluster->hitProdType()
                     << ", merged cluster size = " << mergedClusterClusters.size() << std::endl;
                 mergedClusterClusters.push_back(adjCluster);
                 processedClusters.insert(adjCluster);

@@ -1020,11 +1020,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                     auto simMergedClusterIt = std::find(
                         simMergedClustersRefs.begin(), simMergedClustersRefs.end(), simMergedClusterRef_Match);
 
-                    simClusterRef_RecoMatch_trackIdOff = simClusterRef_RecoMatch->hitProdType();
+                    /*simClusterRef_RecoMatch_trackIdOff = simClusterRef_RecoMatch->hitProdType();
                     simClusterRef_RecoMatch_DeltaZ = simClusRecoMatchGlobalPos.z() - simClusGlobalPos.z();
                     simClusterRef_RecoMatch_DeltaPhi = simClusRecoMatchGlobalPos.phi() - simClusGlobalPos.phi();
-                    simClusterRef_RecoMatch_DeltaT = simClusterRef_RecoMatch->simLCTime() - directSimClus->simLCTime();
-                  }
+                    simClusterRef_RecoMatch_DeltaT = simClusterRef_RecoMatch->simLCTime() - directSimClus->simLCTime();*/
                     bool found = (simMergedClusterIt != simMergedClustersRefs.end());
 
                     if (optionalPlots_ && isTPmtdDirectBTL) {
@@ -1037,18 +1036,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                           (*directSimClus.clusters().begin())->hits_and_positions().front().second;
                       GlobalPoint simClusGlobalPos = geomUtil.globalPosition(detid, simClusLocalPos);
 
-                      } else if (simClusterRef_RecoMatch->hitProdType() != 0) {
-                        isTPmtdOtherCorrectBTL = true;
-                      }
                       // simClusterRef_RecoMatch infos
                       MTDDetId mtddetidRecoMatch = simMergedClusterRef_Match->simDetId();
                       BTLDetId detidRecoMatch(mtddetidRecoMatch.rawId());
                       LocalPoint simClusRecoMatchLocalPos = simMergedClusterRef_Match->simPos();
                       GlobalPoint simClusRecoMatchGlobalPos =
                           geomUtil.globalPosition(detidRecoMatch, simClusRecoMatchLocalPos);
-                      //need to understand trackIdOffset for merged clusters: for now we take the one of the first SimLayerCluster in the SimMergedCluster, could add a function to the merged cluster
+                      //need to understand hitProdType for merged clusters: for now we take the one of the first SimLayerCluster in the SimMergedCluster, could add a function to the merged cluster
                       simClusterRef_RecoMatch_trackIdOff =
-                          (*simMergedClusterRef_Match->clusters().begin())->trackIdOffset();
+                          (*simMergedClusterRef_Match->clusters().begin())->hitProdType();
                       simClusterRef_RecoMatch_DeltaZ = simClusRecoMatchGlobalPos.z() - simClusGlobalPos.z();
                       simClusterRef_RecoMatch_DeltaPhi = simClusRecoMatchGlobalPos.phi() - simClusGlobalPos.phi();
                       simClusterRef_RecoMatch_DeltaT = simMergedClusterRef_Match->simTime() - directSimClus.simTime();
@@ -1062,7 +1058,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                         if (mtddetid.mtdSubDetector() == 1) {
                           // BTL - check if this matched SimMergedCluster contains a direct hit
 
-                          if (simLayerClus->trackIdOffset() == 0) {
+                          if (simLayerClus->hitProdType() == 0) {
                             isTPmtdDirectCorrectBTL = true;
                             simClusterEarliestTime_correctAssoc =
                                 earliestSimHitTimeInSimCluster((*simMergedClusterRef_Match->clusters().begin()));
@@ -1115,13 +1111,13 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
               directSimClusIt =
                   std::find_if(simClustersRefs.begin(), simClustersRefs.end(), [](const auto& simCluster) {
                     MTDDetId mtddetid = simCluster->detIds_and_rows().front().first;
-                    return (mtddetid.mtdSubDetector() == 1 && simCluster->trackIdOffset() == 0);
+                    return (mtddetid.mtdSubDetector() == 1 && simCluster->hitProdType() == 0);
                   });
               // Check if TP has direct or other sim cluster for BTL
               for (const auto& simClusterRef : simClustersRefs) {
                 if (directSimClusIt != simClustersRefs.end() && simClusterRef == *directSimClusIt) {
                   isTPmtdDirectBTL = true;
-                } else if (simClusterRef->trackIdOffset() != 0) {
+                } else if (simClusterRef->hitProdType() != 0) {
                   isTPmtdOtherBTL = true;
                 }
               }
@@ -1160,7 +1156,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                       GlobalPoint simClusRecoMatchGlobalPos =
                           geomUtil.globalPosition(detidRecoMatch, simClusRecoMatchLocalPos);
 
-                      simClusterRef_RecoMatch_trackIdOff = simClusterRef_RecoMatch->trackIdOffset();
+                      simClusterRef_RecoMatch_trackIdOff = simClusterRef_RecoMatch->hitProdType();
                       simClusterRef_RecoMatch_DeltaZ = simClusRecoMatchGlobalPos.z() - simClusGlobalPos.z();
                       simClusterRef_RecoMatch_DeltaPhi = simClusRecoMatchGlobalPos.phi() - simClusGlobalPos.phi();
                       simClusterRef_RecoMatch_DeltaT =
@@ -1175,7 +1171,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                           isTPmtdDirectCorrectBTL = true;
                           simClusterEarliestTime_correctAssoc = earliestSimHitTimeInSimCluster((*simClusterIt));
 
-                        } else if (simClusterRef_RecoMatch->trackIdOffset() != 0) {
+                        } else if (simClusterRef_RecoMatch->hitProdType() != 0) {
                           isTPmtdOtherCorrectBTL = true;
                         }
                       }
