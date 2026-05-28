@@ -57,7 +57,6 @@ private:
   TrackingParticleRefVector trackingParticles_;
   TrackingParticleRef mainTrack_;
   LocalPoint simMC_pos_;
-  
 };
 
 #endif

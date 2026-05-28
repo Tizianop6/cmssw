@@ -178,7 +178,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
   std::vector<const MtdSimLayerCluster*> allsimETLLClusters;
 
   for (const auto& cluster : *simLClusters) {
-    if (!cluster.detIds_and_rows().empty()){
+    if (!cluster.detIds_and_rows().empty()) {
       if (MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::ETL) {
         allsimETLLClusters.push_back(&cluster);
       } else if (MTDDetId(cluster.detIds_and_rows()[0].first).mtdSubDetector() == MTDDetId::BTL) {
@@ -365,25 +365,24 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
             bool hasCommonAncestor = false;
             bool areBothPrimary = (mergedClusterClusters[0]->hitProdType() == 0) && (adjCluster->hitProdType() == 0);
             bool areBothPrimaryfromSameTP = false;
-          
+
             // if both clusters are primary, check if they come from the same TP, otherwise keep them separate, even if they have a common ancestor
-            if (areBothPrimary){
+            if (areBothPrimary) {
               const auto& simLayerClusters1 =
-                simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
+                  simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
               const auto& simLayerClusters2 =
-                simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, adjCluster - &(*simLClusters->begin())));
+                  simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, adjCluster - &(*simLClusters->begin())));
               if (simLayerClusters1 != simClusToTPMap->end() && simLayerClusters2 != simClusToTPMap->end()) {
-                  for (const auto& tpRef1 : simLayerClusters1->val) {
-                    for (const auto& tpRef2 : simLayerClusters2->val) {
-                      if (tpRef1 == tpRef2) {
-                        areBothPrimaryfromSameTP = true;
-                        break;
-                      }
+                for (const auto& tpRef1 : simLayerClusters1->val) {
+                  for (const auto& tpRef2 : simLayerClusters2->val) {
+                    if (tpRef1 == tpRef2) {
+                      areBothPrimaryfromSameTP = true;
+                      break;
                     }
                   }
+                }
               }
-            }
-            else { // if at least one of the clusters is not primary, check for common ancestor and merge if they share one, regardless of whether they come from the same TP or not
+            } else {  // if at least one of the clusters is not primary, check for common ancestor and merge if they share one, regardless of whether they come from the same TP or not
               const auto& simLayerClusters1 =
                   simClusToTPMap->find(MtdSimLayerClusterRef(simLClusters, &cluster - &(*simLClusters->begin())));
               const auto& simLayerClusters2 =
@@ -405,7 +404,8 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               LogDebug("MtdSimMergedClusterProducer")
                   << "  -> MERGING ETA neighbor: " << cluId.rawId() << " with " << adjDetId.rawId();
               int iphi_adj, ieta_adj;
-              std::tie(iphi_adj, ieta_adj) = topology->btlIndex(adjDetId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
+              std::tie(iphi_adj, ieta_adj) =
+                  topology->btlIndex(adjDetId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
               bool isBackscatterMergedcluster = mergedClusterClusters[0]->hitProdType() == 3;
               bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->hitProdType() == 3);
               bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->hitProdType() != 3);
@@ -469,39 +469,39 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     float totalEnergy = 0;
 
     for (const auto& simLCptr : mergedClusterClusters) {
-        const MtdSimLayerCluster& simLC = *simLCptr;
-        float energy = simLC.simLCEnergy();
-        totalEnergy += energy;
+      const MtdSimLayerCluster& simLC = *simLCptr;
+      float energy = simLC.simLCEnergy();
+      totalEnergy += energy;
 
-        // Use the first hit's DetId for geometry lookup
-        if (!simLC.detIds_and_rows().empty()) {
-            DetId detId = simLC.detIds_and_rows()[0].first;
-            const GeomDet* det = geom.idToDetUnit(detId);
-            if (det) {
-                const GlobalPoint& gp = det->surface().toGlobal(simLC.simLCPos());
-                weightedGlobalX += static_cast<double>(energy) * gp.x();
-                weightedGlobalY += static_cast<double>(energy) * gp.y();
-                weightedGlobalZ += static_cast<double>(energy) * gp.z();
-            }
+      // Use the first hit's DetId for geometry lookup
+      if (!simLC.detIds_and_rows().empty()) {
+        DetId detId = simLC.detIds_and_rows()[0].first;
+        const GeomDet* det = geom.idToDetUnit(detId);
+        if (det) {
+          const GlobalPoint& gp = det->surface().toGlobal(simLC.simLCPos());
+          weightedGlobalX += static_cast<double>(energy) * gp.x();
+          weightedGlobalY += static_cast<double>(energy) * gp.y();
+          weightedGlobalZ += static_cast<double>(energy) * gp.z();
         }
+      }
     }
 
     GlobalPoint avgGlobal(0., 0., 0.);
     if (totalEnergy > 0) {
-        avgGlobal = GlobalPoint(weightedGlobalX / totalEnergy, weightedGlobalY / totalEnergy, weightedGlobalZ / totalEnergy);
+      avgGlobal =
+          GlobalPoint(weightedGlobalX / totalEnergy, weightedGlobalY / totalEnergy, weightedGlobalZ / totalEnergy);
     }
 
     // Convert back to local coordinates of the seed cluster
     if (!mergedClusterClusters.empty()) {
-        DetId seedDetId = mergedClusterClusters.front()->detIds_and_rows()[0].first;
-        const GeomDet* seedDet = geom.idToDetUnit(seedDetId);
-        if (seedDet) {
-            LocalPoint lp = seedDet->surface().toLocal(avgGlobal);
-            simMergedCluster.setSimPos(lp);
-        }
+      DetId seedDetId = mergedClusterClusters.front()->detIds_and_rows()[0].first;
+      const GeomDet* seedDet = geom.idToDetUnit(seedDetId);
+      if (seedDet) {
+        LocalPoint lp = seedDet->surface().toLocal(avgGlobal);
+        simMergedCluster.setSimPos(lp);
+      }
     }
     // --- End position calculation ---
-
 
     outputClusters->push_back(simMergedCluster);
     LogDebug("MtdSimMergedClusterProducer")

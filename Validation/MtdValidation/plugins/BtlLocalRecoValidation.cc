@@ -561,8 +561,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       // Find the MTDTrackingRecHit corresponding to the cluster
       MTDTrackingRecHit* comp(nullptr);
       bool matchClu = false;
-      
-      
+
       const auto& trkHits = mtdTrkHitHandle->find(detIdObject);
       if (trkHits != mtdTrkHitHandle->end()) {
         for (const auto& trkHit : *trkHits) {
@@ -577,40 +576,40 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           }
           if (matchClu)
             break;
-        } 
+        }
       }
-    if (!matchClu) { //didn't find the cluster in the same detId, probably has been merged, look for clusters in adjacent detIds (in eta direction)
-         std::pair<uint32_t, uint32_t> indices = topology->btlIndex(detIdObject.rawId());
-          uint32_t iphi = indices.first;
-          uint32_t ieta = indices.second;
-          std::vector<int> etaOffsets = {1, -1};
-          for (int etaOffset : etaOffsets) {
-            uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset); 
-            if (adjDetIdRaw == 0) {
-              continue; //skip if the adjacent detId is invalid
-            }
-            BTLDetId cluId_nearby(adjDetIdRaw);
-            DetId detIdObject_nearby(cluId_nearby);
-      
-            const auto& trkHits_nearby = mtdTrkHitHandle->find(detIdObject_nearby);
-            if (trkHits_nearby != mtdTrkHitHandle->end()) {
-              for (const auto& trkHit : *trkHits_nearby) {
-                auto mergedCluster = trkHit.mtdMergedCluster();
-                const auto& mergedClusterRefs = mergedCluster.clusterRefs();
-                for (const auto& ref : mergedClusterRefs) {
-                  if (isSameCluster(cluster, *ref)) {
-                    comp = trkHit.clone();
-                    matchClu = true;
-                    break;
-                  }
-                }
-                if (matchClu)
+      if (!matchClu) {  //didn't find the cluster in the same detId, probably has been merged, look for clusters in adjacent detIds (in eta direction)
+        std::pair<uint32_t, uint32_t> indices = topology->btlIndex(detIdObject.rawId());
+        uint32_t iphi = indices.first;
+        uint32_t ieta = indices.second;
+        std::vector<int> etaOffsets = {1, -1};
+        for (int etaOffset : etaOffsets) {
+          uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
+          if (adjDetIdRaw == 0) {
+            continue;  //skip if the adjacent detId is invalid
+          }
+          BTLDetId cluId_nearby(adjDetIdRaw);
+          DetId detIdObject_nearby(cluId_nearby);
+
+          const auto& trkHits_nearby = mtdTrkHitHandle->find(detIdObject_nearby);
+          if (trkHits_nearby != mtdTrkHitHandle->end()) {
+            for (const auto& trkHit : *trkHits_nearby) {
+              auto mergedCluster = trkHit.mtdMergedCluster();
+              const auto& mergedClusterRefs = mergedCluster.clusterRefs();
+              for (const auto& ref : mergedClusterRefs) {
+                if (isSameCluster(cluster, *ref)) {
+                  comp = trkHit.clone();
+                  matchClu = true;
                   break;
+                }
               }
+              if (matchClu)
+                break;
             }
           }
         }
-        
+      }
+
       if (!matchClu) {
         edm::LogWarning("BtlLocalRecoValidation")
             << "No valid TrackingRecHit corresponding to cluster, detId = " << detIdObject.rawId();
@@ -697,7 +696,6 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
             meCluZPull_->Fill(z_res / std::sqrt(comp->globalPositionError().czz()));
             meCluXLocalErr_->Fill(std::sqrt(comp->localPositionError().xx()));
             meCluYLocalErr_->Fill(std::sqrt(comp->localPositionError().yy()));
-            
           }
 
           meCluEnergyvsEta_->Fill(std::abs(cluGlobalPosSIM.eta()), cluster.energy());
@@ -749,9 +747,8 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
             meCluZRes_simLC_->Fill(z_res);
 
             if (matchClu && comp != nullptr) {
-              
               meCluLocalXRes_simLC_->Fill(xlocal_res);
-              
+
               if (global_point.z() > 0) {
                 meCluLocalYResZGlobPlus_simLC_->Fill(ylocal_res);
                 meCluLocalYPullZGlobPlus_simLC_->Fill(ylocal_res / std::sqrt(comp->localPositionError().yy()));
@@ -800,7 +797,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
               meCluLocalXPull_simLC_->Fill(xlocal_res / std::sqrt(comp->localPositionError().xx()));
               meCluZPull_simLC_->Fill(z_res / std::sqrt(comp->globalPositionError().czz()));
-              }
+            }
 
             meCluTResvsEta_simLC_->Fill(std::abs(simClusGlobalPos.eta()), time_res);
             meCluTResvsE_simLC_->Fill(simClusEnergy, time_res);

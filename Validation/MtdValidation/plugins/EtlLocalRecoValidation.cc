@@ -476,11 +476,11 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         auto mergedCluster = trkHit.mtdMergedCluster();
         const auto& mergedClusterRefs = mergedCluster.clusterRefs();
         for (const auto& ref : mergedClusterRefs) {
-           if (isSameCluster(cluster, *ref)) {
-             comp = trkHit.clone();
-             matchClu = true;
-             break;
-           }
+          if (isSameCluster(cluster, *ref)) {
+            comp = trkHit.clone();
+            matchClu = true;
+            break;
+          }
         }
         if (matchClu)
           break;

@@ -279,12 +279,12 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
 
     // sorting by rod and module
 
-      std::sort(allClusters.begin(), allClusters.end(), [&topology](const FTLCluster* a, const FTLCluster* b) {
+    std::sort(allClusters.begin(), allClusters.end(), [&topology](const FTLCluster* a, const FTLCluster* b) {
       BTLDetId idA(a->id());
-      BTLDetId idB(b->id());  
+      BTLDetId idB(b->id());
       auto [iphiA, ietaA] = topology->btlIndex(idA.geographicalId(BTLDetId::CrysLayout::v4).rawId());
       auto [iphiB, ietaB] = topology->btlIndex(idB.geographicalId(BTLDetId::CrysLayout::v4).rawId());
-      
+
       if (iphiA != iphiB) {
         return iphiA < iphiB;
       }
@@ -294,7 +294,6 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       return a->id().rawId() < b->id().rawId();
     });
 
-    
     std::set<const FTLCluster*> processedClusters;
 
     // Process clusters
@@ -311,13 +310,14 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.rawId());
       uint32_t iphi = indices.first;
       uint32_t ieta = indices.second;
-      
-      if ((ieta == 48) || (ieta == 96)) { // Don't merge clusters in eta=0 due to gap in detectors, merging would be unphysical, just keep FTLClusters as they are. Also don't merge at the end of the trays, there is nothing to merge with
+
+      if ((ieta == 48) ||
+          (ieta ==
+           96)) {  // Don't merge clusters in eta=0 due to gap in detectors, merging would be unphysical, just keep FTLClusters as they are. Also don't merge at the end of the trays, there is nothing to merge with
         FTLMergedCluster mergedCluster = mergeClusters(mergedClusterClusters, cluId, geom, btlClustersHandle);
         mergedByDet[mergedCluster.id().rawId()].push_back(std::move(mergedCluster));
-        continue;  
+        continue;
       }
-
 
       // Check for edge hits in current cluster
       bool edgeHitIn15 = false;
@@ -329,19 +329,16 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
           edgeHitIn15 = true;
         }
       }
-      
+
       // ETA DIRECTION MERGING
-      if (edgeHitIn15 && iphi != std::numeric_limits<uint32_t>::max() &&
-          ieta != std::numeric_limits<uint32_t>::max()) {
+      if (edgeHitIn15 && iphi != std::numeric_limits<uint32_t>::max() && ieta != std::numeric_limits<uint32_t>::max()) {
         //std::vector<int> etaOffsets = {1, -1};
         int etaOffset = 1;
         uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
-        if (adjDetIdRaw != 0){
-
+        if (adjDetIdRaw != 0) {
           BTLDetId adjDetId(adjDetIdRaw);
           auto it = clusterMap.find(adjDetId);
-          if (it != clusterMap.end()){
-
+          if (it != clusterMap.end()) {
             for (const auto* adjClusterPtr : it->second) {
               if (processedClusters.count(adjClusterPtr)) {
                 continue;

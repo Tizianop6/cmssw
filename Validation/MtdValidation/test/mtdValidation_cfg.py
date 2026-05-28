@@ -43,7 +43,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step_3.root'
+        'file:step3.root'
     )
 )
 

@@ -5,10 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('analysis')
 
 options.register('inputFile',
-                #  'file:/eos/home-n/npalmeri/MTD/MTD_photonReco/CMSSW_15_1_0_pre2_mergedclusterDev/src/SimFastTiming/MtdSimMergedClusterProducers/test/mtdSimMergedClusters_history_1k.root',
-                #  'file:/eos/home-n/npalmeri/MTD/MTD_supercluster/CMSSW_15_1_0_pre2/src/RecoLocalFastTime/FTLClusterizer/test/mtdMergedClusters_numEvent1000.root',
-                #  'file:/eos/user/p/pakrap/MTD/CMSSW_SC_TEST/src/RecoLocalFastTime/FTLClusterizer/mergedcluster_reco_singlepi.root'
-                 'file:/eos/home-n/npalmeri/MTD/MTD_supercluster/CMSSW_15_1_0_pre2/src/RecoLocalFastTime/FTLClusterizer/test/mtdMergedClusters_numEvent1000.root',
+                 'file:step3.root',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
                  "Input ROOT file")
