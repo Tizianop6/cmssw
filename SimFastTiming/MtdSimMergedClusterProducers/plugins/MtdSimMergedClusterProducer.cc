@@ -224,6 +224,12 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               return highest_icol_A > highest_icol_B;  // larger cluster first
             });
 
+    std::cout << "print ordered simLClusters:" << std::endl;
+    for (const auto* cluster : allsimLClusters) {
+      BTLDetId id = cluster->detIds_and_rows()[0].first;
+      std::cout << "  SIMCluster at detId " << id.rawId() << " iphi/ieta: " << topology->btlIndex(id.geographicalId(BTLDetId::CrysLayout::v4).rawId()).first << "/" << topology->btlIndex(id.geographicalId(BTLDetId::CrysLayout::v4).rawId()).second
+                << " energy: " << cluster->energy() << std::endl;
+    }
   // Now, construct cluster map from ordered collection
   std::map<BTLDetId, std::vector<const MtdSimLayerCluster*>> clusterMap;
 
@@ -299,7 +305,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
     LogDebug("MtdSimMergedClusterProducer") << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta;
     
     bool hasEdgeHitCurrent = false;
-    if (((ieta<48) && edgeHitIn15) || ((ieta>48) && edgeHitIn0)) { //check if there an edge hit on the right side (higher z)
+    if (((ieta<48) && edgeHitIn0) || ((ieta>48) && edgeHitIn15)) { //check if there an edge hit on the right side (higher z)
       hasEdgeHitCurrent = true;
     }
     LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
@@ -417,12 +423,44 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               bool isBackscatterMergedcluster = mergedClusterClusters[0]->hitProdType() == 3;
               bool areBothBackscatter = isBackscatterMergedcluster && (adjCluster->hitProdType() == 3);
               bool areBothNotBackscatter = !isBackscatterMergedcluster && (adjCluster->hitProdType() != 3);
-              if (areBothBackscatter || areBothNotBackscatter || areBothPrimaryfromSameTP) {
-                LogDebug("MtdSimMergedClusterProducer")
-                    << "  CLUSTER MERGING: prodType of first = " << mergedClusterClusters[0]->hitProdType()
+              if (areBothBackscatter || (areBothNotBackscatter && !areBothPrimary ) || areBothPrimaryfromSameTP) {
+                std::cout   << "  SIM CLUSTER MERGING: prodType of first = " << mergedClusterClusters[0]->hitProdType()
                     << "( isBackscatterMerged Cluster " << isBackscatterMergedcluster << ")"
                     << ", adjCluster->hitProdType() = " << adjCluster->hitProdType()
-                    << ", merged cluster size = " << mergedClusterClusters.size() << std::endl;
+                    << ", merged cluster size = " << mergedClusterClusters.size() << std::endl << " seed iphi/ieta: " << iphi << "/" << ieta
+                    << ", adj iphi/ieta: " << iphi_adj << "/" << ieta_adj << std::endl;
+                std::cout << "Merging cluster at " << adjDetId.rawId() << " with seed cluster at " << cluId.rawId()
+                  << " due to edge hits and common ancestor." << " etaOffset: " << etaOffset << " hasEdgeHitCurrent: " << hasEdgeHitCurrent 
+                  << " edgeHitIn15: " << edgeHitIn15 << " edgeHitIn0: " << edgeHitIn0 << std::endl;
+                std::cout << "  Seed cluster iphi/ieta: " << iphi << "/" << ieta << " Adj cluster iphi/ieta: " << iphi_adj
+                  << "/" << ieta_adj << std::endl;
+
+                std::cout << "Seed cluster SimHits: " << std::endl;
+                for (const auto& detId_row_col : mergedClusterClusters[0]->detIds_and_rows()) {
+                  int row = detId_row_col.second.first;
+                  int col = detId_row_col.second.second;
+                  std::cout << "  hit col/row: " << col << "/" << row << std::endl;
+                  DetId detId = detId_row_col.first;
+                  const GeomDet* det = geom.idToDetUnit(detId);
+                  if (det) {
+                  const GlobalPoint& gp = det->surface().toGlobal(mergedClusterClusters[0]->simLCPos());
+                  std::cout << "    global pos: (" << gp.x() << ", " << gp.y() << ", " << gp.z() << ")" << std::endl;
+                  }
+                }
+
+                std::cout << "Adjacent cluster SimHits: " << std::endl;
+                for (const auto& detId_row_col : adjCluster->detIds_and_rows()) {
+                  int row = detId_row_col.second.first;
+                  int col = detId_row_col.second.second;
+                  std::cout << "  hit col/row: " << col << "/" << row << std::endl;
+                  DetId detId = detId_row_col.first;
+                  const GeomDet* det = geom.idToDetUnit(detId);
+                  if (det) {
+                  const GlobalPoint& gp = det->surface().toGlobal(adjCluster->simLCPos());
+                  std::cout << "    global pos: (" << gp.x() << ", " << gp.y() << ", " << gp.z() << ")" << std::endl;
+                  }
+                }
+                
                 mergedClusterClusters.push_back(adjCluster);
                 processedClusters.insert(adjCluster);
 

@@ -293,6 +293,13 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       }
       return a->id().rawId() < b->id().rawId();
     });
+    std::cout << "print ordered cluster:" << std::endl;
+    for (const auto* cluster : allClusters) {
+      BTLDetId id = cluster->id();
+      std::cout << "  Cluster at detId " << id.rawId() << " iphi/ieta: " << topology->btlIndex(id.geographicalId(BTLDetId::CrysLayout::v4).rawId()).first << "/" << topology->btlIndex(id.geographicalId(BTLDetId::CrysLayout::v4).rawId()).second
+                << " energy: " << cluster->energy() << " time: " << cluster->time() << std::endl;
+    }
+
 
     std::set<const FTLCluster*> processedClusters;
 
