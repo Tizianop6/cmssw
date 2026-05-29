@@ -218,11 +218,18 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
               int highest_icol_A = maxA->second.second;
               int lowest_icol_B = minB->second.second;
               int highest_icol_B = maxB->second.second;
-
-              if (lowest_icol_A != lowest_icol_B)
-                return lowest_icol_A < lowest_icol_B;
-              return highest_icol_A > highest_icol_B;  // larger cluster first
-            });
+              int widthA = highest_icol_A - lowest_icol_A;
+              int widthB = highest_icol_B - lowest_icol_B;
+              if (widthA != widthB)
+                return widthA > widthB;  // larger cluster first
+              
+              if (ietaA < 49) { // put "leftmost" (lower z) cluster first
+                return lowest_icol_A > lowest_icol_B;
+              } else{
+                return lowest_icol_A < lowest_icol_B;  
+              }
+                
+              });
 
     std::cout << "print ordered simLClusters:" << std::endl;
     for (const auto* cluster : allsimLClusters) {
