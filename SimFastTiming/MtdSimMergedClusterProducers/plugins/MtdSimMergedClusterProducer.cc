@@ -290,22 +290,30 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
         rightmost_col = col;
     }
 
-    bool hasEdgeHitCurrent = edgeHitIn0 || edgeHitIn15;
     LogDebug("MtdSimMergedClusterProducer") << "  Edge hits: col0=" << edgeHitIn0 << ", col15=" << edgeHitIn15;
-    LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
-
+    
     // Get topology indices - use geographicalId (module-level) with crystal layout
     std::pair<uint32_t, uint32_t> indices = topology->btlIndex(cluId.geographicalId(BTLDetId::CrysLayout::v4).rawId());
     uint32_t iphi = indices.first;
     uint32_t ieta = indices.second;
     LogDebug("MtdSimMergedClusterProducer") << "  BTL indices: iphi=" << iphi << ", ieta=" << ieta;
+    
+    bool hasEdgeHitCurrent = false;
+    if (((ieta<48) && edgeHitIn15) || ((ieta>48) && edgeHitIn0)) { //check if there an edge hit on the right side (higher z)
+      hasEdgeHitCurrent = true;
+    }
+    LogDebug("MtdSimMergedClusterProducer") << "  hasEdgeHitCurrent = " << hasEdgeHitCurrent;
 
+    
     // ETA DIRECTION MERGING
     std::vector<int> etaOffsets = {1, 0};
     for (int etaOffset : etaOffsets) {
       if ((hasEdgeHitCurrent && iphi != std::numeric_limits<uint32_t>::max() &&
            ieta != std::numeric_limits<uint32_t>::max()) ||
           etaOffset == 0) {
+        if ((ieta == 48) && etaOffset == 1){
+          continue; // skip merging across the eta=0 gap
+        }
         LogDebug("MtdSimMergedClusterProducer") << "  Attempting eta-direction merging...";
         uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
         LogDebug("MtdSimMergedClusterProducer")
@@ -340,7 +348,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
 
             LogDebug("MtdSimMergedClusterProducer") << " adjacent cluster hit at row " << row << ", col " << col;
 
-            if ((edgeHitIn0 && col == 15 && etaOffset == -1) || (edgeHitIn15 && col == 0 && etaOffset == 1)) {
+            if ((edgeHitIn15 && col == 0 && ieta > 48) || (edgeHitIn0 && col == 15 && ieta < 48)) { //check if there is an edge hit in the neighbouring cluster
               hasOppositeEdgeHit = true;
             }
 

@@ -320,18 +320,26 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
       }
 
       // Check for edge hits in current cluster
+      bool edgeHitIn0 = false;
       bool edgeHitIn15 = false;
 
       for (int i = 0; i < cluster->size(); ++i) {
         auto hit = cluster->hit(i);
         int hit_col = hit.y();
-        if (hit_col == 15) {
+        if (hit_col == 0) {
+          edgeHitIn0 = true;
+        } else if (hit_col == 15) {
           edgeHitIn15 = true;
         }
       }
+      
+      bool hasEdgeHitCurrent = false;
+      if ((((ieta<48) && edgeHitIn0)) || ((ieta>48) && edgeHitIn15)) {
+        hasEdgeHitCurrent = true; // only consider edge hit in 0 direction for clusters with ieta<48, to avoid merging across the gap between modules
+      } 
 
       // ETA DIRECTION MERGING
-      if (edgeHitIn15 && iphi != std::numeric_limits<uint32_t>::max() && ieta != std::numeric_limits<uint32_t>::max()) {
+      if (hasEdgeHitCurrent && iphi != std::numeric_limits<uint32_t>::max() && ieta != std::numeric_limits<uint32_t>::max()) {
         //std::vector<int> etaOffsets = {1, -1};
         int etaOffset = 1;
         uint32_t adjDetIdRaw = topology->btlidFromIndex(iphi, ieta + etaOffset);
@@ -351,18 +359,61 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
               for (int j = 0; j < adjCluster->size(); ++j) {
                 auto hit = adjCluster->hit(j);
                 int hit_col = hit.y();
-                if (edgeHitIn15 && (hit_col == 0)) {
+                if ((edgeHitIn0 && hit_col == 15 && ieta<48) || (edgeHitIn15 && hit_col == 0 && ieta>48)) {
                   hasOppositeEdgeHit = true;
                   break;
                 }
               }
 
-              bool timeOk = areTimingCompatible(cluster, adjCluster);
-              if (hasOppositeEdgeHit && timeOk) {
-                mergedClusterClusters.push_back(adjCluster);
-                // mark neighbor as processed immediately to avoid reuse
-                processedClusters.insert(adjCluster);
+            bool timeOk = areTimingCompatible(cluster, adjCluster);
+            if (hasOppositeEdgeHit && timeOk) {
+              mergedClusterClusters.push_back(adjCluster);
+              // mark neighbor as processed immediately to avoid reuse
+              processedClusters.insert(adjCluster);
+              std::cout << "Merging cluster at " << adjCluster->id().rawId() << " with seed cluster at " << cluster->id().rawId()
+                          << " due to edge hits and timing compatibility." << "etaOffset: " << etaOffset <<"hasOppositeEdgeHit: " << hasOppositeEdgeHit  <<"edgeHitIn15: " << edgeHitIn15 << " edgeHitIn0: " << edgeHitIn0 <<std::endl;
+                std::cout << "  Seed cluster iphi/ieta: " << iphi << "/" << ieta << " Adj cluster iphi/ieta: " << topology->btlIndex(adjCluster->id().rawId()).first
+                          << "/" << topology->btlIndex(adjCluster->id().rawId()).second << std::endl;
+              std::cout << "seed cluster hits: " << std::endl;
+              for (int i = 0; i < cluster->size(); ++i) {
+                auto hit = cluster->hit(i);
+                std::cout << "  hit " << i << " col/row: " << hit.y() << "/" << hit.x() << std::endl;
+                  // Get geometry for global position conversion
+                  const GeomDet* seedDet = geom.idToDetUnit(cluster->id());
+                  if (seedDet) {
+                    const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(seedDet->topology());
+                    const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+                    for (int i = 0; i < cluster->size(); ++i) {
+                      auto hit = cluster->hit(i);
+                      MeasurementPoint mp(hit.x(), hit.y());
+                      const LocalPoint localPos = topo.localPosition(mp);
+                      const GlobalPoint globalPos = seedDet->surface().toGlobal(localPos);
+                      std::cout << "  hit " << i << " col/row: " << hit.y() << "/" << hit.x() 
+                          << " global pos: (" << globalPos.x() << ", " << globalPos.y() << ", " << globalPos.z() << ")" << std::endl;
+                    }
+                  }
               }
+              std::cout << "adj cluster hits: " << std::endl;
+              for (int i = 0; i < adjCluster->size(); ++i)
+              {
+                auto hit = adjCluster->hit(i);
+                std::cout << "  hit " << i << " col/row: " << hit.y() << "/" << hit.x() << std::endl;
+                  // Get geometry for global position conversion
+                  const GeomDet* seedDet = geom.idToDetUnit(adjCluster->id());
+                  if (seedDet) {
+                    const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(seedDet->topology());
+                    const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+                    for (int i = 0; i < adjCluster->size(); ++i) {
+                      auto hit = adjCluster->hit(i);
+                      MeasurementPoint mp(hit.x(), hit.y());
+                      const LocalPoint localPos = topo.localPosition(mp);
+                      const GlobalPoint globalPos = seedDet->surface().toGlobal(localPos);
+                      std::cout << "  hit " << i << " col/row: " << hit.y() << "/" << hit.x() 
+                          << " global pos: (" << globalPos.x() << ", " << globalPos.y() << ", " << globalPos.z() << ")" << std::endl;
+                    }
+                  }
+              }
+            }
             }
           }
         }
