@@ -48,6 +48,11 @@
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 #include "DQMServices/Core/interface/DQMStore.h"
 
+#include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
+#include "SimDataFormats/Associations/interface/MtdRecoMergedClusterToSimMergedClusterAssociationMap.h"
+#include "SimDataFormats/Associations/interface/MtdSimMergedClusterToRecoMergedClusterAssociationMap.h"
+#include "SimDataFormats/Associations/interface/MtdRecoMergedClusterToSimMergedClusterAssociatorBaseImpl.h"
+#include "SimDataFormats/Associations/interface/MtdSimMergedClusterToTPAssociator.h"
 
 #define DEBUG 0
 
@@ -74,6 +79,10 @@ private:
 
   edm::EDGetTokenT<reco::SimToTPCollectionMtd> sim2tpAssociationMapToken_;
   edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
+
+  // Merged cluster <-> sim merged cluster association maps
+  edm::EDGetTokenT<reco::MergedRecoToSimCollectionMtd> mergedRecoToSimMapToken_;
+  edm::EDGetTokenT<reco::MergedSimToRecoCollectionMtd> mergedSimToRecoMapToken_;
 
   edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
   edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
@@ -153,6 +162,39 @@ private:
   MonitorElement* h_simmc_primaryEnergy_vs_energy_;
   MonitorElement* h_simmc_primaryEnergy_vs_nClusters_;
 
+  // ---------------------------------------------------------- //
+  // ---- RECO vs SIM resolution histograms (merged-cluster  --- //
+  // ---- association maps; simRef methods give avg values)   --- //
+  // ---------------------------------------------------------- //
+
+  // inclusive
+  MonitorElement* h_deltaTime_;
+  MonitorElement* h_deltaEnergy_;
+  MonitorElement* h_deltaX_;
+  MonitorElement* h_deltaY_;
+  MonitorElement* h_deltaNclu_;
+  MonitorElement* h_deltaNhits_;
+  MonitorElement* h_nSimPerReco_;
+
+  // multi-cluster (nClusters > 1)
+  MonitorElement* h_deltaTime_multiClu_;
+  MonitorElement* h_deltaEnergy_multiClu_;
+  MonitorElement* h_deltaX_multiClu_;
+  MonitorElement* h_deltaY_multiClu_;
+  MonitorElement* h_deltaNclu_multiClu_;
+  MonitorElement* h_deltaNhits_multiClu_;
+  MonitorElement* h_nSimPerReco_multiClu_;
+
+  // single-cluster (nClusters == 1)
+  MonitorElement* h_deltaTime_singleClu_;
+  MonitorElement* h_deltaEnergy_singleClu_;
+  MonitorElement* h_deltaX_singleClu_;
+  MonitorElement* h_deltaY_singleClu_;
+
+  // vs eta (2D)
+  MonitorElement* h_deltaTime_vs_Eta_;
+  MonitorElement* h_deltaEnergy_vs_Eta_;
+
   int evt_run_, evt_event_;
 
   // RECO
@@ -202,6 +244,11 @@ MergedClusterValidation::MergedClusterValidation(const edm::ParameterSet& iConfi
   r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(
       iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
 
+  mergedRecoToSimMapToken_ =
+      consumes<reco::MergedRecoToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("mergedRecoToSimMap"));
+  mergedSimToRecoMapToken_ =
+      consumes<reco::MergedSimToRecoCollectionMtd>(iConfig.getParameter<edm::InputTag>("mergedSimToRecoMap"));
+
   totalAdjacentPairs_ = 0;
   totalMergedPairs_ = 0;
   sameTrackIdPairs_ = 0;
@@ -230,6 +277,8 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
   edm::Handle<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapHandle;
   iEvent.getByToken(r2sAssociationMapToken_, r2sAssociationMapHandle);
   const MtdRecoClusterToSimLayerClusterAssociationMap& r2sAssociationMap = *r2sAssociationMapHandle;
+
+  const auto& mergedRecoToSimMap = iEvent.get(mergedRecoToSimMapToken_);
 
   if (!mergedClustersHandle.isValid() || !clustersHandle.isValid() || !simMergedClustersHandle.isValid() ||
       !mtdSimLCHandle.isValid()) {
@@ -1239,6 +1288,91 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
 
   h_simmc_n_->Fill(simmc_n_);
 
+  // ------------------------------------------------------------- //
+  // -------- RECO vs SIM RESOLUTION (merged assoc. maps) --------- //
+  // ------------------------------------------------------------- //
+  
+  for (const auto& detSet : *mergedClustersHandle) {
+    for (const auto& mc : detSet) {
+      FTLMergedClusterRef recoMergedClusRef = edmNew::makeRefTo(mergedClustersHandle, &mc);
+      if (!recoMergedClusRef.isNonnull())
+        continue;
+
+      auto itp = mergedRecoToSimMap.equal_range(recoMergedClusRef);
+      if (itp.first == itp.second)
+        continue;
+
+      const std::vector<MtdSimMergedClusterRef>& simMergedRefs = itp.first->second;
+      h_nSimPerReco_->Fill(simMergedRefs.size());
+
+      int nClusters = mc.nClusters();
+      if (nClusters > 1)
+        h_nSimPerReco_multiClu_->Fill(simMergedRefs.size());
+
+      for (const auto& simRef : simMergedRefs) {
+        if (!simRef.isNonnull())
+          continue;
+
+        float simEnergy = convertUnitsTo(0.001_MeV, simRef->simEnergy());
+        if (simEnergy < 1.0f)
+          continue;
+
+        // Use averaged values directly from the SimMergedCluster methods
+        float deltaTime = mc.time() - simRef->simTime();
+        float deltaEnergy = mc.energy() - simEnergy;
+        float deltaX = mc.x() - simRef->simPos().x();
+        float deltaY = mc.y() - simRef->simPos().y();
+
+        int deltaNclu = nClusters - static_cast<int>(simRef->clusters().size());
+
+        int recoHits = 0;
+        for (const auto& cluRef : mc.clusterRefs())
+          recoHits += cluRef->size();
+        int simHits = 0;
+        for (const auto& simCluRef : simRef->clusters())
+          simHits += simCluRef->hits_and_fractions().size();
+        int deltaNhits = recoHits - simHits;
+
+        // Fill inclusive histograms
+        h_deltaTime_->Fill(deltaTime);
+        h_deltaEnergy_->Fill(deltaEnergy);
+        h_deltaX_->Fill(deltaX);
+        h_deltaY_->Fill(deltaY);
+        h_deltaNclu_->Fill(deltaNclu);
+        h_deltaNhits_->Fill(deltaNhits);
+
+        // Fill split histograms by cluster multiplicity
+        if (nClusters > 1) {
+          h_deltaTime_multiClu_->Fill(deltaTime);
+          h_deltaEnergy_multiClu_->Fill(deltaEnergy);
+          h_deltaX_multiClu_->Fill(deltaX);
+          h_deltaY_multiClu_->Fill(deltaY);
+          h_deltaNclu_multiClu_->Fill(deltaNclu);
+          h_deltaNhits_multiClu_->Fill(deltaNhits);
+        } else {
+          h_deltaTime_singleClu_->Fill(deltaTime);
+          h_deltaEnergy_singleClu_->Fill(deltaEnergy);
+          h_deltaX_singleClu_->Fill(deltaX);
+          h_deltaY_singleClu_->Fill(deltaY);
+        }
+
+        // Compute sim eta from geometry for the vs-eta 2D histograms
+        DetId simDetId = simRef->simDetId();
+        if (simDetId.rawId() != 0) {
+          BTLDetId btlId(simDetId);
+          DetId geoId =
+              btlId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+          const MTDGeomDet* thedet = geom->idToDet(geoId);
+          if (thedet != nullptr) {
+            GlobalPoint simGlobalPos = thedet->toGlobal(simRef->simPos());
+            h_deltaTime_vs_Eta_->Fill(simGlobalPos.eta(), deltaTime);
+            h_deltaEnergy_vs_Eta_->Fill(simGlobalPos.eta(), deltaEnergy);
+          }
+        }
+      }  // end loop over simMergedRefs
+    }
+  }  // end RECO vs SIM loop
+
   // tree_->getTTree()->Fill();
 
   if (evt_event_ <= 3) {
@@ -1432,6 +1566,58 @@ void MergedClusterValidation::bookHistograms(DQMStore::IBooker& ibooker, edm::Ru
                      20,
                      0,
                      40);
+
+  // ---------------------------------------------------------- //
+  // ------ RECO vs SIM resolution histograms               ---- //
+  // ---------------------------------------------------------- //
+
+  // inclusive
+  h_deltaTime_ =
+      ibooker.book1D("h_deltaTime", "Time Resolution (Reco - Sim);#Delta t [ns];Entries", 100, -0.5, 0.5);
+  h_deltaEnergy_ =
+      ibooker.book1D("h_deltaEnergy", "Energy Resolution (Reco - Sim);#Delta E [MeV];Entries", 80, -20., 20.);
+  h_deltaX_ =
+      ibooker.book1D("h_deltaX", "Local X Resolution (Reco - Sim);#Delta X [cm];Entries", 100, -3.1, 3.1);
+  h_deltaY_ =
+      ibooker.book1D("h_deltaY", "Local Y Resolution (Reco - Sim);#Delta Y [cm];Entries", 50, -3., 3.);
+  h_deltaNclu_ =
+      ibooker.book1D("h_deltaNclu", "Cluster Multiplicity Difference (Reco - Sim);#Delta N_{clusters};Entries", 21, -10.5, 10.5);
+  h_deltaNhits_ =
+      ibooker.book1D("h_deltaNhits", "Hit Multiplicity Difference (Reco - Sim);#Delta N_{hits};Entries", 41, -20.5, 20.5);
+  h_nSimPerReco_ =
+      ibooker.book1D("h_nSimPerReco", "N SimMergedClusters per RecoMergedCluster;N_{sim};Entries", 10, 0., 10.);
+
+  // multi-cluster (nClusters > 1)
+  h_deltaTime_multiClu_ =
+      ibooker.book1D("h_deltaTime_multiClu", "Time Resolution Multi-Cluster;#Delta t [ns];Entries", 100, -0.5, 0.5);
+  h_deltaEnergy_multiClu_ =
+      ibooker.book1D("h_deltaEnergy_multiClu", "Energy Resolution Multi-Cluster;#Delta E [MeV];Entries", 80, -5., 5.);
+  h_deltaX_multiClu_ =
+      ibooker.book1D("h_deltaX_multiClu", "Local X Resolution Multi-Cluster;#Delta X [cm];Entries", 100, -3.1, 3.1);
+  h_deltaY_multiClu_ =
+      ibooker.book1D("h_deltaY_multiClu", "Local Y Resolution Multi-Cluster;#Delta Y [cm];Entries", 50, -3., 3.);
+  h_deltaNclu_multiClu_ =
+      ibooker.book1D("h_deltaNclu_multiClu", "Cluster Multiplicity Difference Multi-Cluster;#Delta N_{clusters};Entries", 21, -10.5, 10.5);
+  h_deltaNhits_multiClu_ =
+      ibooker.book1D("h_deltaNhits_multiClu", "Hit Multiplicity Difference Multi-Cluster;#Delta N_{hits};Entries", 41, -20.5, 20.5);
+  h_nSimPerReco_multiClu_ =
+      ibooker.book1D("h_nSimPerReco_multiClu", "N SimMergedClusters per RecoMergedCluster (Multi);N_{sim};Entries", 10, 0., 10.);
+
+  // single-cluster (nClusters == 1)
+  h_deltaTime_singleClu_ =
+      ibooker.book1D("h_deltaTime_singleClu", "Time Resolution Single-Cluster;#Delta t [ns];Entries", 100, -0.5, 0.5);
+  h_deltaEnergy_singleClu_ =
+      ibooker.book1D("h_deltaEnergy_singleClu", "Energy Resolution Single-Cluster;#Delta E [MeV];Entries", 80, -5., 5.);
+  h_deltaX_singleClu_ =
+      ibooker.book1D("h_deltaX_singleClu", "Local X Resolution Single-Cluster;#Delta X [cm];Entries", 100, -3.1, 3.1);
+  h_deltaY_singleClu_ =
+      ibooker.book1D("h_deltaY_singleClu", "Local Y Resolution Single-Cluster;#Delta Y [cm];Entries", 50, -3., 3.);
+
+  // vs eta (2D)
+  h_deltaTime_vs_Eta_ =
+      ibooker.book2D("h_deltaTime_vs_Eta", "Time Resolution vs #eta;#eta;#Delta t [ns]", 50, -1.5, 1.5, 50, -0.5, 0.5);
+  h_deltaEnergy_vs_Eta_ =
+      ibooker.book2D("h_deltaEnergy_vs_Eta", "Energy Resolution vs #eta;#eta;#Delta E [MeV]", 50, -1.5, 1.5, 80, -20., 20.);
 }
 
 void MergedClusterValidation::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -1443,6 +1629,9 @@ void MergedClusterValidation::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.add<edm::InputTag>("simLayerClusters",edm::InputTag("mix", "MergedMtdTruthLC"));
   desc.add<edm::InputTag>("sim2tpAssociationMapTag",edm::InputTag("mtdSimLayerClusterToTPAssociation", ""));
   desc.add<edm::InputTag>("r2sAssociationMapTag",edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation", ""));
+  // Tags for the merged-cluster-level association maps (adjust to your producer labels):
+  desc.add<edm::InputTag>("mergedRecoToSimMap", edm::InputTag("mtdRecoMergedClusterToSimMergedClusterAssociation", ""));
+  desc.add<edm::InputTag>("mergedSimToRecoMap", edm::InputTag("mtdSimMergedClusterToMergedClusterAssociation", ""));
 
   descriptions.add("mergedClusterValid", desc);
 }
