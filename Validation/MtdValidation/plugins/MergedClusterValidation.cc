@@ -1316,13 +1316,30 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
         float simEnergy = convertUnitsTo(0.001_MeV, simRef->simEnergy());
         if (simEnergy < 1.0f)
           continue;
+        
+        // Get geometry for the reco seed module
+        const MTDGeomDet* recodet = geom->idToDet(mc.id());
+        // Get geometry for the sim reference module
+        BTLDetId simBtlId(simRef->simDetId());
+        DetId simGeoId = simBtlId.geographicalId(
+            MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+        const MTDGeomDet* simdet = geom->idToDet(simGeoId);
 
-        // Use averaged values directly from the SimMergedCluster methods
+        if (recodet == nullptr || simdet == nullptr) {
+          edm::LogWarning("MergedClusterValidation") << "Geometry not found for reco or sim detId, skipping resolution calculation.";
+          continue;
+        }
+        //GlobalPoint recoGlobal = recodet->surface().toGlobal(LocalPoint(mc.x(), mc.y(), 0.f));
+        GlobalPoint simGlobal  = simdet->toGlobal(simRef->simPos());
+
+        // Express the difference in the seed module's own local frame,
+        LocalPoint simInRecoFrame = recodet->toLocal(simGlobal);
+
+        float deltaX = mc.x()  - simInRecoFrame.x();
+        float deltaY = mc.y()  - simInRecoFrame.y();
         float deltaTime = mc.time() - simRef->simTime();
         float deltaEnergy = mc.energy() - simEnergy;
-        float deltaX = mc.x() - simRef->simPos().x();
-        float deltaY = mc.y() - simRef->simPos().y();
-
+        
         int deltaNclu = nClusters - static_cast<int>(simRef->clusters().size());
 
         int recoHits = 0;
