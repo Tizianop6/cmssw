@@ -181,6 +181,14 @@ private:
   MonitorElement* h_deltaEnergy_multiClu_;
   MonitorElement* h_deltaX_multiClu_;
   MonitorElement* h_deltaY_multiClu_;
+      
+  MonitorElement* h_deltaX_recoMultiClu_ ;
+  MonitorElement* h_deltaY_recoMultiClu_ ;
+  MonitorElement* h_deltaZ_recoMultiClu_ ;
+  MonitorElement* h_deltaX_simMultiClu_ ;
+  MonitorElement* h_deltaY_simMultiClu_ ;
+  MonitorElement* h_deltaZ_simMultiClu_ ;
+  
   MonitorElement* h_deltaNclu_multiClu_;
   MonitorElement* h_deltaNhits_multiClu_;
   MonitorElement* h_nSimPerReco_multiClu_;
@@ -835,7 +843,7 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
           for (auto assocIt = currentSimClustersRange.first; assocIt != currentSimClustersRange.second; ++assocIt) {
             const auto& simClusterRefs = assocIt->second;
             for (const auto& simClusterRef : simClusterRefs) {
-              //if (simClusterRef->hitProdType() != 0) continue; // Only direct matches
+              if (simClusterRef->hitProdType() != 0) continue; // Only direct matches
 
               auto tpRefs = sim2tpAssociationMap.find(simClusterRef);
               if (tpRefs != sim2tpAssociationMap.end()) {
@@ -1125,8 +1133,15 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
     std::vector<float> time_perCluster;
     std::vector<uint32_t> clusterType_perCluster;
     if (simmc.clusters().size() >1){
-              h_mc_cluster_hitProdType_2D->Fill((*simmc.clusters().at(0)).hitProdType(), (*simmc.clusters().at(1)).hitProdType());
-    } 
+        h_mc_cluster_hitProdType_2D->Fill((*simmc.clusters().at(0)).hitProdType(), (*simmc.clusters().at(1)).hitProdType());
+        /*const MTDGeomDet* simdet1 = geom->idToDet((simmc.detIds().at(0)));
+        const MTDGeomDet* simdet2 = geom->idToDet((simmc.detIds().at(1)));
+        GlobalPoint simGlobal1  = simdet1->toGlobal((*simmc.clusters().at(0)).simLCPos());
+        GlobalPoint simGlobal2  = simdet2->toGlobal((*simmc.clusters().at(1)).simLCPos());
+        h_deltaX_simMultiClu_->Fill(simGlobal1.x() - simGlobal2.x());
+        h_deltaY_simMultiClu_ ->Fill(simGlobal1.y() - simGlobal2.y());
+        h_deltaZ_simMultiClu_ ->Fill(simGlobal1.z() - simGlobal2.z());*/
+        } 
     // Access individual clusters from the mergedcluster
     for (const auto& cluster_ref : simmc.clusters()) {
         
@@ -1312,6 +1327,14 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
       for (const auto& simRef : simMergedRefs) {
         if (!simRef.isNonnull())
           continue;
+        bool onlyDirectMatches = true;
+        for (const auto& simCluRef : simRef->clusters()) {
+          if (simCluRef->hitProdType() != 0) {
+            onlyDirectMatches = false;
+            break;
+          }
+        }
+        if (!onlyDirectMatches) continue; // Only direct matches
 
         float simEnergy = convertUnitsTo(0.001_MeV, simRef->simEnergy());
         if (simEnergy < 1.0f)
@@ -1334,6 +1357,32 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
 
         // Express the difference in the seed module's own local frame,
         LocalPoint simInRecoFrame = recodet->toLocal(simGlobal);
+        /*
+        if (nClusters == 2) {
+          // Get global positions of the two reco clusters
+          GlobalPoint recoGlobal1(0, 0, 0);
+          GlobalPoint recoGlobal2(0, 0, 0);
+          
+          const auto& cluRef1 = mc.clusterRefs()[0];
+          const auto& cluRef2 = mc.clusterRefs()[1];
+          
+          if (cluRef1.isNonnull() && cluRef2.isNonnull()) {
+            const MTDGeomDet* det1 = geom->idToDet(cluRef1->id());
+            const MTDGeomDet* det2 = geom->idToDet(cluRef2->id());
+            
+            if (det1 && det2) {
+              LocalPoint localPos1(cluRef1->x(), cluRef1->y(), 0.0f);
+              LocalPoint localPos2(cluRef2->x(), cluRef2->y(), 0.0f);
+              
+              recoGlobal1 = det1->surface().toGlobal(localPos1);
+              recoGlobal2 = det2->surface().toGlobal(localPos2);
+              
+              h_deltaX_recoMultiClu_->Fill((recoGlobal1.x() - recoGlobal2.x()) / 10.);  // convert mm to cm
+              h_deltaY_recoMultiClu_->Fill((recoGlobal1.y() - recoGlobal2.y()) / 10.);
+              h_deltaZ_recoMultiClu_->Fill((recoGlobal1.z() - recoGlobal2.z()) / 10.);
+            }
+          }
+        }*/
 
         float deltaX = mc.x()  - simInRecoFrame.x();
         float deltaY = mc.y()  - simInRecoFrame.y();
@@ -1366,7 +1415,7 @@ void MergedClusterValidation::analyze(const edm::Event& iEvent, const edm::Event
           h_deltaY_multiClu_->Fill(deltaY);
           h_deltaNclu_multiClu_->Fill(deltaNclu);
           h_deltaNhits_multiClu_->Fill(deltaNhits);
-        } else {
+          } else {
           h_deltaTime_singleClu_->Fill(deltaTime);
           h_deltaEnergy_singleClu_->Fill(deltaEnergy);
           h_deltaX_singleClu_->Fill(deltaX);
@@ -1592,7 +1641,7 @@ void MergedClusterValidation::bookHistograms(DQMStore::IBooker& ibooker, edm::Ru
   h_deltaTime_ =
       ibooker.book1D("h_deltaTime", "Time Resolution (Reco - Sim);#Delta t [ns];Entries", 100, -0.5, 0.5);
   h_deltaEnergy_ =
-      ibooker.book1D("h_deltaEnergy", "Energy Resolution (Reco - Sim);#Delta E [MeV];Entries", 80, -20., 20.);
+      ibooker.book1D("h_deltaEnergy", "Energy Resolution (Reco - Sim);#Delta E [MeV];Entries", 100, -0.5, 0.5);
   h_deltaX_ =
       ibooker.book1D("h_deltaX", "Local X Resolution (Reco - Sim);#Delta X [cm];Entries", 100, -3.1, 3.1);
   h_deltaY_ =
@@ -1608,11 +1657,28 @@ void MergedClusterValidation::bookHistograms(DQMStore::IBooker& ibooker, edm::Ru
   h_deltaTime_multiClu_ =
       ibooker.book1D("h_deltaTime_multiClu", "Time Resolution Multi-Cluster;#Delta t [ns];Entries", 100, -0.5, 0.5);
   h_deltaEnergy_multiClu_ =
-      ibooker.book1D("h_deltaEnergy_multiClu", "Energy Resolution Multi-Cluster;#Delta E [MeV];Entries", 80, -5., 5.);
+      ibooker.book1D("h_deltaEnergy_multiClu", "Energy Resolution Multi-Cluster;#Delta E [MeV];Entries", 100, -0.5, 0.5);
   h_deltaX_multiClu_ =
       ibooker.book1D("h_deltaX_multiClu", "Local X Resolution Multi-Cluster;#Delta X [cm];Entries", 100, -3.1, 3.1);
   h_deltaY_multiClu_ =
       ibooker.book1D("h_deltaY_multiClu", "Local Y Resolution Multi-Cluster;#Delta Y [cm];Entries", 50, -3., 3.);
+
+
+  h_deltaX_recoMultiClu_ =
+      ibooker.book1D("h_deltaX_recoMultiClu", "X pos. difference between two FTLClusters in MergedCluster;#Delta X [cm];Entries", 200, -5, 5);
+  h_deltaY_recoMultiClu_ =
+      ibooker.book1D("h_deltaY_recoMultiClu", "Y pos. difference between two FTLClusters in MergedCluster;#Delta Y [cm];Entries", 200, -5., 5.);
+  h_deltaZ_recoMultiClu_ =
+      ibooker.book1D("h_deltaZ_recoMultiClu", "Z pos. difference between two FTLClusters in MergedCluster;#Delta Z [cm];Entries", 200, -5., 5.);
+      
+  h_deltaX_simMultiClu_ =
+      ibooker.book1D("h_deltaX_simMultiClu", "X pos. difference between two SimLayerClusters in MergedCluster;#Delta X [cm];Entries", 200, -5, 5);
+  h_deltaY_simMultiClu_ =
+      ibooker.book1D("h_deltaY_simMultiClu", "Y pos. difference between two SimLayerClusters in MergedCluster;#Delta Y [cm];Entries", 200, -5., 5.);
+  h_deltaZ_simMultiClu_ =
+      ibooker.book1D("h_deltaZ_simMultiClu", "Z pos. difference between two SimLayerClusters in MergedCluster;#Delta Z [cm];Entries", 200, -5., 5.);
+  
+
   h_deltaNclu_multiClu_ =
       ibooker.book1D("h_deltaNclu_multiClu", "Cluster Multiplicity Difference Multi-Cluster;#Delta N_{clusters};Entries", 21, -10.5, 10.5);
   h_deltaNhits_multiClu_ =
