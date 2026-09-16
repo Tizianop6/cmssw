@@ -500,7 +500,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       meCluHits_->Fill(cluster.nHits());
 
       // Find the MTDTrackingRecHit corresponding to the cluster
-      MTDTrackingRecHit* comp(nullptr);
+      const MTDTrackingRecHit* comp(nullptr);
       bool matchClu = false;
 
       const auto& trkHits = mtdTrkHitHandle->find(detIdObject);
@@ -513,6 +513,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
                 << trkHit.localPositionError().xx() << "," << trkHit.localPositionError().yy() << " : " << trkHit.time()
                 << " : " << trkHit.timeError();
             matchClu = true;
+            comp = &trkHit;
             break;
           }
         }

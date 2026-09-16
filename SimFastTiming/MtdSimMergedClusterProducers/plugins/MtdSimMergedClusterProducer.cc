@@ -243,7 +243,7 @@ void MtdSimMergedClusterProducer::produce(edm::Event& iEvent, const edm::EventSe
   for (const auto* cluster : allsimLClusters) {
     if (cluster->energy() >= minEnergy_) {
       // retrieve GEOGRAPHICAL id -> rawId
-      clusterMap[BTLDetId::rawGeoId(cluster->detIds_and_rows()[0].first, crysLayout)].push_back(cluster);    
+      clusterMap[BTLDetId::rawGeoId(cluster->detIds_and_rows()[0].first, crysLayout)].push_back(cluster);
     }
   }
 
