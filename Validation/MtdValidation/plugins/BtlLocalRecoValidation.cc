@@ -186,6 +186,27 @@ private:
   // resolution w.r.t. to MtdSimLayerClusters
   MonitorElement* meCluTrackIdOffset_;
 
+  MonitorElement* meMatchedCluEnergyRatio_;
+  MonitorElement* meMatchedCluEnergyRes_;
+  MonitorElement* meMatchedCluTimeRes_;
+  MonitorElement* meMatchedCluTimePull_;
+
+  MonitorElement* meMatchedCluEnergyRatio_oneMatch_;
+  MonitorElement* meMatchedCluEnergyRes_oneMatch_;
+  MonitorElement* meMatchedCluTimeRes_oneMatch_;
+  MonitorElement* meMatchedCluTimePull_oneMatch_;
+
+  MonitorElement* meMatchedCluEnergyRatio_twoMatches_;
+  MonitorElement* meMatchedCluEnergyRes_twoMatches_;
+  MonitorElement* meMatchedCluTimeRes_twoMatches_;
+  MonitorElement* meMatchedCluTimePull_twoMatches_;
+
+  MonitorElement* meMatchedCluEnergyRatio_gtTwoMatches_;
+  MonitorElement* meMatchedCluEnergyRes_gtTwoMatches_;
+  MonitorElement* meMatchedCluTimeRes_gtTwoMatches_;
+  MonitorElement* meMatchedCluTimePull_gtTwoMatches_;
+
+
   MonitorElement* meCluTimeRes_simLC_;
   MonitorElement* meCluEnergyRes_simLC_;
   MonitorElement* meCluTResvsE_simLC_;
@@ -531,9 +552,36 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           std::vector<MtdSimMergedClusterRef> simClustersRefs =
               (*itp.first).second;  // the range of itp.first, itp.second should be always 1
           for (unsigned int i = 0; i < simClustersRefs.size(); i++) {
+
             const auto& simClusterRef = simClustersRefs[i];
 
             float simClusEnergy = convertUnitsTo(0.001_MeV, (*simClusterRef).simEnergy());  // GeV --> MeV
+
+
+            meMatchedCluEnergyRatio_->Fill(simClusEnergy/cluster.energy());
+            meMatchedCluEnergyRes_->Fill(cluster.energy() - simClusEnergy);
+            meMatchedCluTimeRes_->Fill(cluster.time() - (*simClustersRefs[i]).simTime());
+            meMatchedCluTimePull_->Fill((cluster.time() - (*simClustersRefs[i]).simTime()) / cluster.timeError());
+
+            if (simClustersRefs.size() == 1) {
+              meMatchedCluEnergyRatio_oneMatch_->Fill(simClusEnergy/cluster.energy());
+              meMatchedCluEnergyRes_oneMatch_->Fill(cluster.energy() - simClusEnergy);
+              meMatchedCluTimeRes_oneMatch_->Fill(cluster.time() - (*simClustersRefs[i]).simTime());
+              meMatchedCluTimePull_oneMatch_->Fill((cluster.time() - (*simClustersRefs[i]).simTime()) / cluster.timeError());
+            } else if (simClustersRefs.size() == 2) {
+              meMatchedCluEnergyRatio_twoMatches_->Fill(simClusEnergy/cluster.energy());
+              meMatchedCluEnergyRes_twoMatches_->Fill(cluster.energy() - simClusEnergy);
+              meMatchedCluTimeRes_twoMatches_->Fill(cluster.time() - (*simClustersRefs[i]).simTime());
+              meMatchedCluTimePull_twoMatches_->Fill((cluster.time() - (*simClustersRefs[i]).simTime()) / cluster.timeError());
+            } else if (simClustersRefs.size() > 2) {
+              meMatchedCluEnergyRatio_gtTwoMatches_->Fill(simClusEnergy/cluster.energy());
+              meMatchedCluEnergyRes_gtTwoMatches_->Fill(cluster.energy() - simClusEnergy);
+              meMatchedCluTimeRes_gtTwoMatches_->Fill(cluster.time() - (*simClustersRefs[i]).simTime());
+              meMatchedCluTimePull_gtTwoMatches_->Fill((cluster.time() - (*simClustersRefs[i]).simTime()) / cluster.timeError());
+            }
+            if ((simClusEnergy/cluster.energy() < 0.2) || (cluster.time() - (*simClustersRefs[i]).simTime()) / cluster.timeError() > 10.) {
+              continue;
+            }
             float simClusTime = (*simClusterRef).simTime();
             LocalPoint simClusLocalPos = (*simClusterRef).simPos();
             const auto& simClusGlobalPos = genericDet->toGlobal(simClusLocalPos);
@@ -921,6 +969,26 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
       "BtlOccupancy", "BTL cluster Z vs #phi;Z_{RECO} [cm]; #phi_{RECO} [rad]", 144, -260., 260., 50, -3.2, 3.2);
 
   // with MtdSimLayerCluster as truth
+  meMatchedCluEnergyRatio_ = ibook.book1D("BtlMatchedCluEnergyRatio", "BTL matched cluster energy ratio;E_{SIM}/E_{RECO}", 100, 0, 2);
+  meMatchedCluEnergyRes_ = ibook.book1D("BtlMatchedCluEnergyRes", "BTL matched cluster energy resolution;E_{RECO}-E_{SIM} [MeV]", 100, -1.5, 1.5);
+  meMatchedCluTimeRes_ = ibook.book1D("BtlMatchedCluTimeRes", "BTL matched cluster time resolution;T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
+  meMatchedCluTimePull_ = ibook.book1D("BtlMatchedCluTimePull", "BTL matched cluster time pull;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 100, -25., 25.);
+
+  meMatchedCluEnergyRatio_oneMatch_ = ibook.book1D("BtlMatchedCluEnergyRatio_oneMatch", "BTL matched cluster energy ratio (1 reco->sim match);E_{SIM}/E_{RECO}", 100, 0, 2);
+  meMatchedCluEnergyRes_oneMatch_ = ibook.book1D("BtlMatchedCluEnergyRes_oneMatch", "BTL matched cluster energy resolution (1 reco->sim match);E_{RECO}-E_{SIM} [MeV]", 100, -1.5, 1.5);
+  meMatchedCluTimeRes_oneMatch_ = ibook.book1D("BtlMatchedCluTimeRes_oneMatch", "BTL matched cluster time resolution (1 reco->sim match);T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
+  meMatchedCluTimePull_oneMatch_ = ibook.book1D("BtlMatchedCluTimePull_oneMatch", "BTL matched cluster time pull (1 reco->sim match);(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 100, -25., 25.);
+
+  meMatchedCluEnergyRatio_twoMatches_ = ibook.book1D("BtlMatchedCluEnergyRatio_twoMatches", "BTL matched cluster energy ratio (2 reco->sim matches);E_{SIM}/E_{RECO}", 100, 0, 2);
+  meMatchedCluEnergyRes_twoMatches_ = ibook.book1D("BtlMatchedCluEnergyRes_twoMatches", "BTL matched cluster energy resolution (2 reco->sim matches);E_{RECO}-E_{SIM} [MeV]", 100, -1.5, 1.5);
+  meMatchedCluTimeRes_twoMatches_ = ibook.book1D("BtlMatchedCluTimeRes_twoMatches", "BTL matched cluster time resolution (2 reco->sim matches);T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
+  meMatchedCluTimePull_twoMatches_ = ibook.book1D("BtlMatchedCluTimePull_twoMatches", "BTL matched cluster time pull (2 reco->sim matches);(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 100, -25., 25.);
+
+  meMatchedCluEnergyRatio_gtTwoMatches_ = ibook.book1D("BtlMatchedCluEnergyRatio_gtTwoMatches", "BTL matched cluster energy ratio (>2 reco->sim matches);E_{SIM}/E_{RECO}", 100, 0, 2);
+  meMatchedCluEnergyRes_gtTwoMatches_ = ibook.book1D("BtlMatchedCluEnergyRes_gtTwoMatches", "BTL matched cluster energy resolution (>2 reco->sim matches);E_{RECO}-E_{SIM} [MeV]", 100, -1.5, 1.5);
+  meMatchedCluTimeRes_gtTwoMatches_ = ibook.book1D("BtlMatchedCluTimeRes_gtTwoMatches", "BTL matched cluster time resolution (>2 reco->sim matches);T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
+  meMatchedCluTimePull_gtTwoMatches_ = ibook.book1D("BtlMatchedCluTimePull_gtTwoMatches", "BTL matched cluster time pull (>2 reco->sim matches);(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 100, -25., 25.);
+
 
   meCluTrackIdOffset_ =
       ibook.book1D("BtlCluTrackIdOffset", "BTL cluster category (trackId offset); trackId offset", 4, 0.0, 4.0);
