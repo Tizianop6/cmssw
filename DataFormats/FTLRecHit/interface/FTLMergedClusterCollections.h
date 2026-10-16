@@ -12,6 +12,5 @@
 typedef edmNew::DetSetVector<FTLMergedCluster> FTLMergedClusterCollection;
 typedef edm::Ref<FTLMergedClusterCollection, FTLMergedCluster> FTLMergedClusterRef;
 typedef edm::DetSetRefVector<FTLMergedCluster> FTLMergedClusterRefs;
-typedef edm::RefProd<FTLMergedClusterCollection> FTLMergedClustersRef;
 
 #endif
