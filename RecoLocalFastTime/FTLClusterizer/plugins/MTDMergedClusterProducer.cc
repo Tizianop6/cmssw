@@ -453,7 +453,7 @@ void MTDMergedClusterProducer::produce(edm::Event& e, const edm::EventSetup& es)
         auto clustersInSameDetId = btlClustersHandle->find(
             clusterId);  // see if there other (internal) clusters in the same detId. This needs to be done because you can only fill one detId once.
         for (auto& clusterInSameDetId : *clustersInSameDetId) {
-          if ((clusterInSameDetId.maxHitCol() != 0) && (clusterInSameDetId.maxHitCol() != 15)) {
+          if ((clusterInSameDetId.minHitCol() != 0) && (clusterInSameDetId.maxHitCol() != 15)) {
             mergedClusterClusters.push_back(&clusterInSameDetId);
             if (saveMergedClusterConstituents_)
               clusterRefs.push_back(edmNew::makeRefTo(btlClustersHandle, &clusterInSameDetId));
