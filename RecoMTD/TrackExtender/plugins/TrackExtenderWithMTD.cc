@@ -66,17 +66,26 @@ namespace {
       constexpr float chi2_cut = 10.f;
       constexpr float low_weight = 3.f;
       constexpr float high_weight = 8.f;
+      //std::cout << "Comparing hits with estChi2: " << estChi2 << " timeChi2: " << timeChi2 << "  and  estChi2: "<< m2.estChi2 << "useTimeChi2inComparison: " << useTimeChi2InComparison << " " << m2.useTimeChi2InComparison<< std::endl;
       if (timeChi2 < chi2_cut && m2.timeChi2 < chi2_cut)
         return chi2(low_weight) < m2.chi2(low_weight);
       else
         return chi2(high_weight) < m2.chi2(high_weight);
     }
 
-    inline float chi2(float timeWeight = 1.f) const { return estChi2 + timeWeight * timeChi2; }
+    inline float chi2(float timeWeight = 1.f) const { 
+      if (!useTimeChi2InComparison){
+        return estChi2; 
+      }
+      else { 
+        return estChi2 + timeWeight * timeChi2;
+      }
+    } 
 
     const MTDTrackingRecHit* hit;
     float estChi2;
     float timeChi2;
+    bool useTimeChi2InComparison;
   };
 
   class TrackSegments {
@@ -1086,7 +1095,8 @@ namespace {
                          const Propagator* prop,
                          const MeasurementEstimator* estimator,
                          bool useVtxConstraint,
-                         std::set<MTDHitMatchingInfo>& out) {
+                         std::set<MTDHitMatchingInfo>& out, 
+                         bool useTimeChi2InComparison) {
     pair<bool, TrajectoryStateOnSurface> comp = layer->compatible(tsos, *prop, *estimator);
     if (comp.first) {
       const vector<DetLayer::DetWithState> compDets = layer->compatibleDets(tsos, *prop, *estimator);
@@ -1149,6 +1159,7 @@ namespace {
               mi.hit = &hit;
               mi.estChi2 = est.second;
               mi.timeChi2 = tof.dtchi2_best;  //use the chi2 for the best matching hypothesis
+              mi.useTimeChi2InComparison = useTimeChi2InComparison;
 
               out.insert(mi);
             }
@@ -1245,7 +1256,8 @@ void TrackExtenderWithMTDT<TrackCollection>::fillMatchingHits(const DetLayer* il
                                                               MTDHitMatchingInfo& bestHit) const {
   std::set<MTDHitMatchingInfo> hitsInLayer;
   bool hitMatched = false;
-
+  //std::cout << "btl chi 2 cut " << btlChi2Cut_ << " etl chi2 cut " << etlChi2Cut_ << std::endl;
+                                  
   using namespace std::placeholders;
   auto find_hits = std::bind(find_hits_in_dets,
                              std::cref(hits),
@@ -1261,7 +1273,8 @@ void TrackExtenderWithMTDT<TrackCollection>::fillMatchingHits(const DetLayer* il
                              prop,
                              theEstimator.get(),
                              _2,
-                             std::ref(hitsInLayer));
+                             std::ref(hitsInLayer), 
+                             btlTimeChi2Cut_>0);
 
   if (useVertex_ && matchVertex)
     find_hits(vtxTime, true);

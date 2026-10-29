@@ -166,6 +166,7 @@ private:
 
   edm::EDGetTokenT<reco::TrackCollection> GenRecTrackToken_;
   edm::EDGetTokenT<reco::TrackCollection> RecTrackToken_;
+  
 
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleCollectionToken_;
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoAssociationToken_;
@@ -425,6 +426,25 @@ private:
   std::vector<int> ndof_vec,noPIDtype_vec;
   std::vector<bool> isPi_vec, isP_vec, isK_vec, noPID_vec;
   std::vector<bool> withMTD_vec;
+  std::vector<float> tMTD_vec, tMTDError_vec;
+
+  std::vector <float> TP_pt_vec;
+  std::vector <float> TP_eta_vec;
+  std::vector <float> TP_p_vec;
+  std::vector <float> TP_phi_vec;
+  std::vector <int> TP_pdgId_vec;
+  std::vector <int> TP_charge_vec;
+  std::vector <float> TP_vtx_x_vec;
+  std::vector <float> TP_vtx_y_vec;
+  std::vector <float> TP_vtx_z_vec;
+  std::vector <float> TP_vtx_time_vec;
+  std::vector <float> TP_mass_vec;
+  std::vector <float> TP_status_vec;
+  std::vector <float> TP_isPromptFinalState_vec;
+  std::vector <float> TP_isfromHardProcessFinalState_vec;
+
+
+
 };
 
 void MtdTracksValidation::ClearVectors(){
@@ -471,6 +491,24 @@ void MtdTracksValidation::ClearVectors(){
   outerZ_vec.clear();
   outerR_vec.clear();
   withMTD_vec.clear();
+  tMTD_vec.clear();
+  tMTDError_vec.clear();
+
+  TP_pt_vec.clear();
+  TP_eta_vec.clear();
+  TP_p_vec.clear();
+  TP_phi_vec.clear();
+  TP_pdgId_vec.clear();
+  TP_charge_vec.clear();
+  TP_vtx_x_vec.clear();
+  TP_vtx_y_vec.clear();
+  TP_vtx_z_vec.clear();
+  TP_vtx_time_vec.clear();
+  TP_mass_vec.clear();
+  TP_status_vec.clear();
+  TP_isPromptFinalState_vec.clear();
+  TP_isfromHardProcessFinalState_vec.clear();
+
 
 }
 
@@ -547,6 +585,10 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("isK",&isK_vec);
   dump_tree->Branch("noPID",&noPID_vec);
   dump_tree->Branch("noPIDtype",&noPIDtype_vec);
+
+  dump_tree->Branch("tMTD",&tMTD_vec);
+  dump_tree->Branch("tMTDError",&tMTDError_vec);
+
   
   //dump_tree->Branch("matchCategory",&matchCategory_vec);
   dump_tree->Branch("xsim",&xsim_vec);
@@ -576,6 +618,22 @@ void MtdTracksValidation::MakeBranches(){
   dump_tree->Branch("outerZ",&outerZ_vec);
   dump_tree->Branch("outerR",&outerR_vec);
   dump_tree->Branch("withMTD",&withMTD_vec);
+
+  dump_tree->Branch("TP_pt",&TP_pt_vec);
+  dump_tree->Branch("TP_eta",&TP_eta_vec);
+  dump_tree->Branch("TP_p",&TP_p_vec);
+  dump_tree->Branch("TP_phi",&TP_phi_vec);
+  dump_tree->Branch("TP_pdgId",&TP_pdgId_vec);
+  dump_tree->Branch("TP_charge",&TP_charge_vec);
+  dump_tree->Branch("TP_vtx_x",&TP_vtx_x_vec);
+  dump_tree->Branch("TP_vtx_y",&TP_vtx_y_vec);
+  dump_tree->Branch("TP_vtx_z",&TP_vtx_z_vec);
+  dump_tree->Branch("TP_vtx_time",&TP_vtx_time_vec);
+  dump_tree->Branch("TP_mass",&TP_mass_vec);
+  dump_tree->Branch("TP_status",&TP_status_vec);
+  dump_tree->Branch("TP_fromHardProcessFinalState",&TP_isfromHardProcessFinalState_vec);
+  dump_tree->Branch("TP_isPromptFinalState",&TP_isPromptFinalState_vec);
+  
   
 }
 
@@ -635,6 +693,20 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       continue;
 
     const auto& tp = *tpRef;
+    if (tp.eventId().bunchCrossing() != 0 || tp.eventId().event() != 0) continue;
+    TP_pt_vec.push_back(tp.pt());
+    TP_eta_vec.push_back(tp.eta());
+    TP_p_vec.push_back(tp.p());
+    TP_phi_vec.push_back(tp.phi());
+    TP_pdgId_vec.push_back(tp.pdgId());
+    TP_charge_vec.push_back(tp.charge());
+    TP_vtx_x_vec.push_back(tp.vx());
+    TP_vtx_y_vec.push_back(tp.vy());
+    TP_vtx_z_vec.push_back(tp.vz());
+    TP_vtx_time_vec.push_back(tp.parentVertex()->position().t() * simUnit_);
+    TP_mass_vec.push_back(tp.mass());
+    //std::cout << "TP mass: " << tp.mass() << std::endl;
+    TP_status_vec.push_back(tp.status());
     //std::cout << "TP index: " << tpRef.key() << " pdgId: " << tp.pdgId() << " pt: " << tp.pt()
     //          << " eta: " << tp.eta() << " phi: " << tp.phi() << std::endl;
   }
@@ -908,6 +980,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         simPhi_vec.push_back((*tp_info)->phi());
         simPdgId_vec.push_back((*tp_info)->pdgId());
         recoP_vec.push_back(trackGen.p());
+        tMTD_vec.push_back(tMtd[trackref]);
+        tMTDError_vec.push_back(SigmatMtd[trackref]);
         recoPt_vec.push_back(trackGen.pt());
         recoPhi_vec.push_back(trackGen.phi());
         recoEta_vec.push_back(trackGen.eta());
@@ -2336,7 +2410,7 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<std::string>("folder", "MTD/Tracks");
   desc.add<bool>("optionalPlots", false);
   desc.add<edm::InputTag>("inputTagG", edm::InputTag("generalTracks"));
-  desc.add<edm::InputTag>("inputTagT", edm::InputTag("trackExtenderWithMTD"));
+  desc.add<edm::InputTag>("inputTagT", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2"));
   desc.add<edm::InputTag>("inputTagV", edm::InputTag("offlinePrimaryVertices4D"));
   desc.add<edm::InputTag>("inputTagH", edm::InputTag("generatorSmeared"));
   desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
@@ -2347,23 +2421,23 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("etlRecHits", edm::InputTag("mtdRecHits", "FTLEndcap"));
   desc.add<edm::InputTag>("recCluTagBTL", edm::InputTag("mtdClusters", "FTLBarrel"));
   desc.add<edm::InputTag>("recCluTagETL", edm::InputTag("mtdClusters", "FTLEndcap"));
-  desc.add<edm::InputTag>("tmtd", edm::InputTag("trackExtenderWithMTD:generalTracktmtd"));
-  desc.add<edm::InputTag>("sigmatmtd", edm::InputTag("trackExtenderWithMTD:generalTracksigmatmtd"));
-  desc.add<edm::InputTag>("t0Src", edm::InputTag("trackExtenderWithMTD:generalTrackt0"));
-  desc.add<edm::InputTag>("sigmat0Src", edm::InputTag("trackExtenderWithMTD:generalTracksigmat0"));
-  desc.add<edm::InputTag>("trackAssocSrc", edm::InputTag("trackExtenderWithMTD:generalTrackassoc"))
+  desc.add<edm::InputTag>("tmtd", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTracktmtd"));
+  desc.add<edm::InputTag>("sigmatmtd", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTracksigmatmtd"));
+  desc.add<edm::InputTag>("t0Src", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackt0"));
+  desc.add<edm::InputTag>("sigmat0Src", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTracksigmat0"));
+  desc.add<edm::InputTag>("trackAssocSrc", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackassoc"))
       ->setComment("Association between General and MTD Extended tracks");
-  desc.add<edm::InputTag>("pathLengthSrc", edm::InputTag("trackExtenderWithMTD:generalTrackPathLength"));
+  desc.add<edm::InputTag>("pathLengthSrc", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackPathLength"));
   desc.add<edm::InputTag>("t0SafePID", edm::InputTag("tofPID:t0safe"));
   desc.add<edm::InputTag>("sigmat0SafePID", edm::InputTag("tofPID:sigmat0safe"));
   desc.add<edm::InputTag>("sigmat0PID", edm::InputTag("tofPID:sigmat0"));
   desc.add<edm::InputTag>("t0PID", edm::InputTag("tofPID:t0"));
-  desc.add<edm::InputTag>("sigmaTofPi", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofPi"));
-  desc.add<edm::InputTag>("sigmaTofK", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofK"));
-  desc.add<edm::InputTag>("sigmaTofP", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofP"));
+  desc.add<edm::InputTag>("sigmaTofPi", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackSigmaTofPi"));
+  desc.add<edm::InputTag>("sigmaTofK", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackSigmaTofK"));
+  desc.add<edm::InputTag>("sigmaTofP", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackSigmaTofP"));
   desc.add<edm::InputTag>("trackMVAQual", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"));
   desc.add<edm::InputTag>("outermostHitPositionSrc",
-                          edm::InputTag("trackExtenderWithMTD:generalTrackOutermostHitPosition"));
+                          edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2:generalTrackOutermostHitPosition"));
   desc.add<double>("trackMaximumPt", 12.);  // [GeV]
   desc.add<double>("trackMaximumBtlEta", 1.5);
   desc.add<double>("trackMinimumEtlEta", 1.6);

@@ -18,6 +18,8 @@
 
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/Point3D.h"
+#include "DataFormats/MuonReco/interface/MuonFwd.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
 
 // reco track and vertex
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -320,6 +322,49 @@ private:
   std::vector <float> recoEta_vec;
   std::vector <float> recoPhi_vec;
   std::vector <float> recoCharge_vec;
+  std::vector <float> recoMuP_vec;
+  std::vector <float> recoMuPt_vec;
+  std::vector <float> recoMuPErr_vec;
+  std::vector <float> recoMuPtErr_vec;
+  std::vector <float> recoMuEta_vec;
+  std::vector <float> recoMuPhi_vec;
+  std::vector <float> recoMuCharge_vec;
+
+
+  std::vector <float> recoMuTrkRelIso_vec;
+  std::vector <float> recoMuTunePRelPt_vec;
+  std::vector <float>  recoMupfRelIso03_all_vec;
+  std::vector <float>  recoMuIsLoose_vec,recoMuIsLoose2_vec;
+  std::vector <float>  recoMuIsPFCandidate_vec;
+    std::vector <float> recoMuIsGlobal_vec;
+  std::vector <float> recoMuIsTracker_vec;
+  std::vector <float> recoMuIsStandAlone_vec;
+  
+  std::vector <float> recoMuvtxIdx_vec;
+  std::vector <float> recoMuvtxWeight_vec;
+  std::vector <float> recoMuvtxtime_vec;
+  std::vector <float> recoMutMTD_vec;
+  std::vector <float> recoMutMTDErr_vec;
+  std::vector <float> recoMut0Safe_vec;
+  std::vector <float> recoMusigmat0Safe_vec;
+  std::vector <float> recoMupathLength_vec;
+  std::vector <float> recoMubeta_vec;
+  std::vector <float> recoMuinvBeta_vec;
+  
+  
+  
+  
+  
+
+  
+  
+
+  std::vector <float> recoMuPnoBT_vec;
+  std::vector <float> recoMuPtnoBT_vec;
+  std::vector <float> recoMuEtanoBT_vec;
+  std::vector <float> recoMuPhinoBT_vec;
+  
+
   std::vector <float> xPCA_vec; 
   std::vector <float> yPCA_vec;  
   std::vector <float> zPCA_vec;
@@ -490,6 +535,8 @@ private:
   edm::EDGetTokenT<std::vector<PileupSummaryInfo>> vecPileupSummaryInfoToken_;
 
   edm::EDGetTokenT<reco::TrackCollection> trkToken;
+  edm::EDGetTokenT<reco::MuonCollection> muonToken_;
+
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleCollectionToken_;
   edm::EDGetTokenT<TrackingVertexCollection> trackingVertexCollectionToken_;
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoAssociationToken_;
@@ -735,6 +782,7 @@ Primary4DVertexValidation::Primary4DVertexValidation(const edm::ParameterSet& iC
       pdtToken_(esConsumes<HepPDT::ParticleDataTable, edm::DefaultRecord>()) {
   vecPileupSummaryInfoToken_ = consumes<std::vector<PileupSummaryInfo>>(edm::InputTag(std::string("addPileupInfo")));
   trkToken = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("TrackLabel"));
+  muonToken_ = consumes<reco::MuonCollection>(iConfig.getParameter<edm::InputTag>("muonLabel"));
   trackingParticleCollectionToken_ =
       consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
   trackingVertexCollectionToken_ = consumes<TrackingVertexCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
@@ -806,6 +854,44 @@ void Primary4DVertexValidation::MakeBranches() {
   dump_tree->Branch("recoEta",&recoEta_vec);
   dump_tree->Branch("recoPhi",&recoPhi_vec);
   dump_tree->Branch("recoCharge",&recoCharge_vec);
+  dump_tree->Branch("recoMuP",&recoMuP_vec);
+  dump_tree->Branch("recoMuPt",&recoMuPt_vec);
+  dump_tree->Branch("recoMuPErr",&recoMuPErr_vec);
+  dump_tree->Branch("recoMuPtErr",&recoMuPtErr_vec);
+  dump_tree->Branch("recoMuEta",&recoMuEta_vec);
+  dump_tree->Branch("recoMuPhi",&recoMuPhi_vec);
+  dump_tree->Branch("recoMuCharge",&recoMuCharge_vec);
+  
+
+  dump_tree->Branch("recoMuTrkRelIso",&recoMuTrkRelIso_vec);
+  dump_tree->Branch("recoMuTunePRelPt",&recoMuTunePRelPt_vec);
+  dump_tree->Branch("recoMupfRelIso03_all",&recoMupfRelIso03_all_vec);
+  dump_tree->Branch("recoMuIsLoose",&recoMuIsLoose_vec);
+  dump_tree->Branch("recoMuIsLoose2",&recoMuIsLoose2_vec);
+  dump_tree->Branch("recoMuIsPFCandidate",&recoMuIsPFCandidate_vec);
+  dump_tree->Branch("recoMuIsGlobal",&recoMuIsGlobal_vec);
+  dump_tree->Branch("recoMuIsTracker",&recoMuIsTracker_vec);
+  dump_tree->Branch("recoMuIsStandAlone",&recoMuIsStandAlone_vec);
+  dump_tree->Branch("recoMuPnoBT",&recoMuPnoBT_vec);
+  dump_tree->Branch("recoMuPtnoBT",&recoMuPtnoBT_vec);
+  dump_tree->Branch("recoMuEtanoBT",&recoMuEtanoBT_vec);
+  dump_tree->Branch("recoMuPhinoBT",&recoMuPhinoBT_vec);
+  
+
+
+
+  dump_tree->Branch("recoMuvtxIdx", &recoMuvtxIdx_vec);
+  dump_tree->Branch("recoMuvtxWeight", &recoMuvtxWeight_vec);
+  dump_tree->Branch("recoMuvtxtime", &recoMuvtxtime_vec);
+  dump_tree->Branch("recoMutMTD", &recoMutMTD_vec);
+  dump_tree->Branch("recoMutMTDErr", &recoMutMTDErr_vec);
+  dump_tree->Branch("recoMuvt0Safe", &recoMut0Safe_vec);
+  dump_tree->Branch("recoMuvsigmat0Safe", &recoMusigmat0Safe_vec);
+  dump_tree->Branch("recoMupathlength", &recoMupathLength_vec);
+  dump_tree->Branch("recoMubeta", &recoMubeta_vec);
+  dump_tree->Branch("recoMuinvBeta", &recoMuinvBeta_vec);
+  
+
   dump_tree->Branch("xPCA",&xPCA_vec); 
   dump_tree->Branch("yPCA",&yPCA_vec);  
   dump_tree->Branch("zPCA",&zPCA_vec);
@@ -935,6 +1021,41 @@ void Primary4DVertexValidation::ClearVectors() {
   recoEta_vec.clear();
   recoPhi_vec.clear();
   recoCharge_vec.clear();
+  recoMuP_vec.clear();
+  recoMuPt_vec.clear();
+  recoMuPErr_vec.clear();
+  recoMuPtErr_vec.clear();
+  recoMuEta_vec.clear();
+  recoMuPhi_vec.clear();
+  recoMuCharge_vec.clear();
+
+  recoMuTrkRelIso_vec.clear();
+  recoMuTunePRelPt_vec.clear();
+  recoMupfRelIso03_all_vec.clear();
+  recoMuIsLoose_vec.clear();
+  recoMuIsLoose2_vec.clear();
+  recoMuIsPFCandidate_vec.clear();
+  recoMuIsGlobal_vec.clear();
+  recoMuIsTracker_vec.clear();
+  recoMuIsStandAlone_vec.clear();
+  recoMuPnoBT_vec.clear();
+  recoMuPtnoBT_vec.clear();
+  recoMuEtanoBT_vec.clear();
+  recoMuPhinoBT_vec.clear();
+
+
+  recoMuvtxIdx_vec.clear();
+  recoMuvtxWeight_vec.clear();
+  recoMuvtxtime_vec.clear();
+  recoMutMTD_vec.clear();
+  recoMutMTDErr_vec.clear();
+  recoMut0Safe_vec.clear();
+  recoMusigmat0Safe_vec.clear();
+  recoMupathLength_vec.clear();
+  recoMubeta_vec.clear();
+  recoMuinvBeta_vec.clear();
+
+
   xPCA_vec.clear(); 
   yPCA_vec.clear();  
   zPCA_vec.clear();
@@ -2595,6 +2716,138 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
   const auto& probP = iEvent.get(probPToken_);
   const auto& fPDGTable = iSetup.getHandle(pdtToken_);
 
+
+
+
+
+  edm::Handle<reco::MuonCollection> muons;
+    iEvent.getByToken(muonToken_, muons);
+
+
+    if (muons.isValid()) {
+        for (size_t i = 0; i < muons->size(); ++i) {
+            const reco::Muon& mu = (*muons)[i];
+            reco::MuonRef muRef(muons, i);
+
+            // Access kinematics
+            float pt = mu.pt();
+            recoMuP_vec.push_back(mu.bestTrack()->p());
+            recoMuPt_vec.push_back(mu.bestTrack()->pt());
+            recoMuPnoBT_vec.push_back(mu.p());
+            recoMuPtnoBT_vec.push_back(mu.pt());
+            recoMuEtanoBT_vec.push_back(mu.eta());
+            recoMuPhinoBT_vec.push_back(mu.phi());
+            recoMuPErr_vec.push_back(sqrt(mu.bestTrack()->covariance()(0,0))*(mu.bestTrack()->p2()));
+            recoMuPtErr_vec.push_back(sqrt(mu.bestTrack()->covariance()(0,0))*(mu.bestTrack()->pt2()));
+            recoMuEta_vec.push_back(mu.bestTrack()->eta());
+            recoMuPhi_vec.push_back(mu.bestTrack()->phi());
+            recoMuCharge_vec.push_back(mu.charge());
+            recoMuTrkRelIso_vec.push_back(mu.isolationR03().sumPt/mu.tunePMuonBestTrack()->pt());
+            recoMuTunePRelPt_vec.push_back(mu.tunePMuonBestTrack()->pt()/mu.pt());
+            recoMupfRelIso03_all_vec.push_back((mu.pfIsolationR03().sumChargedHadronPt + std::max((double)(mu.pfIsolationR03().sumNeutralHadronEt + mu.pfIsolationR03().sumPhotonEt - mu.pfIsolationR03().sumPUPt/2),0.0))/mu.pt());
+            recoMuIsLoose_vec.push_back(mu.passed('CutBasedIdLoose'));
+            recoMuIsLoose2_vec.push_back(mu.passed(0));
+            
+            recoMuIsPFCandidate_vec.push_back(mu.isPFMuon());
+            recoMuIsGlobal_vec.push_back(mu.isGlobalMuon());
+            recoMuIsTracker_vec.push_back(mu.isTrackerMuon());
+            recoMuIsStandAlone_vec.push_back(mu.isStandAloneMuon());
+
+  
+            mu.bestTrack()->pt();  // Accessing the associated track's pt
+            std::cout << "Muon " << i << ": pt = " << pt << std::endl;
+
+
+            // Find if this muon's track is in any vertex
+            auto muonTrackRef = mu.innerTrack();  // or mu.outerTrack() or mu.globalTrack()
+            
+            int vtxIndex = -1;
+            float vtxWeight = -1;
+            
+            // Loop over vertices to find matching track
+            for (unsigned int iv = 0; iv < recopv.size(); iv++) {
+                const reco::Vertex* vertex = recopv.at(iv).recVtx;
+                
+                for (auto iTrack = vertex->tracks_begin(); iTrack != vertex->tracks_end(); ++iTrack) {
+                  reco::TrackRef trackRef = iTrack->castTo<reco::TrackRef>();
+                    if (trackRef == muonTrackRef) {
+                        vtxIndex = iv;
+                        vtxWeight = vertex->trackWeight(*iTrack);
+                        break;
+                    }
+                }
+                if (vtxIndex != -1) break;
+            }
+            
+            recoMuvtxIdx_vec.push_back(vtxIndex);
+            recoMuvtxWeight_vec.push_back(vtxWeight);
+            recoMuvtxtime_vec.push_back((vtxIndex != -1) ? recopv.at(vtxIndex).recVtx->t() : -999);
+
+
+            std::cout << "Muon " << i << ": associated vertex index = " << vtxIndex << ", weight = " << vtxWeight << std::endl;
+
+
+
+          // Access MTD-related timing from the ValueMap
+          // You need to get the track reference that matches the extended tracks collection
+          float muon_tMTD = -999;
+          float muon_tMTDErr = -999;
+          float muon_t0Safe = -999;
+          float muon_sigmat0Safe = -999;
+          float muon_pathLength = -999;
+          float muon_beta = -999;
+          float muon_invBeta = -999;
+          
+          if (muonTrackRef.isNonnull()) {
+              // Find the corresponding extended track reference
+              // You need to check if this track is in your MTD tracks collection
+              muon_tMTD = tMtd[muonTrackRef];
+              muon_tMTDErr = sigmat0[muonTrackRef];
+              muon_t0Safe = t0Safe[muonTrackRef];
+              muon_sigmat0Safe = sigmat0Safe[muonTrackRef];
+              muon_pathLength = pathLength[muonTrackRef];
+              
+              // Calculate beta and invBeta
+              if (vtxIndex != -1 && muon_pathLength > 0) {
+                  float c_light_ = 29.9792458; // cm/ns
+                  float deltaT = muon_tMTD - recopv.at(vtxIndex).recVtx->t();
+                  if (deltaT > 0) {
+                      muon_beta = muon_pathLength / deltaT / c_light_;
+                      muon_invBeta = 1.0 / muon_beta;
+                  }
+              }else if (muon_tMTD > 0 && muon_pathLength > 0)
+              {
+                float c_light_ = 29.9792458; // cm/ns
+                  float deltaT = muon_tMTD;
+                  if (deltaT > 0) {
+                      muon_beta = muon_pathLength / deltaT / c_light_;
+                      muon_invBeta = 1.0 / muon_beta;
+                  }
+              }
+              
+              
+              std::cout << "Muon " << i << ": tMTD = " << muon_tMTD 
+                        << ", t0Safe = " << muon_t0Safe 
+                        << ", beta = " << muon_beta 
+                        << ", invBeta = " << muon_invBeta << " "<< muon_tMTDErr << " " << muon_sigmat0Safe <<std::endl;
+          }
+
+          recoMutMTD_vec.push_back(muon_tMTD);
+          recoMutMTDErr_vec.push_back(muon_tMTDErr);
+          recoMut0Safe_vec.push_back(muon_t0Safe);
+          recoMusigmat0Safe_vec.push_back(muon_sigmat0Safe);
+          recoMupathLength_vec.push_back(muon_pathLength);
+          recoMubeta_vec.push_back(muon_beta);
+          recoMuinvBeta_vec.push_back(muon_invBeta);
+
+
+        }
+    }
+
+
+
+
+
   // I have simPV and recoPV collections
   matchReco2Sim(recopv, simpv, sigmat0Safe, mtdQualMVA, BeamSpotH);
 
@@ -3659,6 +3912,8 @@ void Primary4DVertexValidation::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<std::string>("folder", "MTD/Vertices");
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
   desc.add<edm::InputTag>("TrackLabel", edm::InputTag("generalTracks"));
+  desc.add<edm::InputTag>("muonLabel", edm::InputTag("muons"));
+
   desc.add<edm::InputTag>("mtdTracks", edm::InputTag("trackExtenderWithMTDrelaxedTimeChi2"));
   desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
   desc.add<edm::InputTag>("offlineBS", edm::InputTag("offlineBeamSpot"));
