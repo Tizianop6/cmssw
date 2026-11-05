@@ -857,10 +857,9 @@ reco::Track TrackExtenderWithMTDT<TrackCollection>::buildTrack(const reco::Track
       sigmatofp = tofInfo.sigma_dt_p;
     }
   }
-
+  
   return routput();
 }
-
 template <class TrackCollection>
 reco::TrackExtra TrackExtenderWithMTDT<TrackCollection>::buildTrackExtra(const Trajectory& trajectory) const {
   static const string metname = "TrackExtenderWithMTD";

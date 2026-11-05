@@ -4,6 +4,7 @@ import FWCore.ParameterSet.Config as cms
 RecoMTDAOD = cms.PSet(
     outputCommands = cms.untracked.vstring(
         'keep *edmValueMap_trackExtenderWithMTD_*_*',
+        'keep *edmValueMap_trackExtenderWithMTDrelaxedTimeChi2_*_*',
         'keep *_mtdTrackQualityMVA_*_*')
 )
 
@@ -11,6 +12,7 @@ RecoMTDAOD = cms.PSet(
 RecoMTDRECO = cms.PSet(
     outputCommands = cms.untracked.vstring(
          'keep recoTrack*_trackExtenderWithMTD_*_*',
+         'keep recoTrack*_trackExtenderWithMTDrelaxedTimeChi2_*_*',
          'keep TrackingRecHitsOwned_trackExtenderWithMTD_*_*',
     )
 )

@@ -34,7 +34,8 @@ namespace {
                          const float bsTimeSpread,
                          const Propagator* prop,
                          const MeasurementEstimator* estimator,
-                         std::set<MTDHitMatchingInfo>& out) {
+                         std::set<MTDHitMatchingInfo>& out,
+                         bool useTimeChi2InComparison) {
     std::pair<bool, TrajectoryStateOnSurface> comp = layer->compatible(tsos, *prop, *estimator);
     if (comp.first) {
       const std::vector<DetLayer::DetWithState> compDets = layer->compatibleDets(tsos, *prop, *estimator);
@@ -95,6 +96,7 @@ namespace {
               mi.hit = &hit;
               mi.estChi2 = est.second;
               mi.timeChi2 = tof.dtchi2_best;
+              mi.useTimeChi2InComparison = useTimeChi2InComparison;
 
               out.insert(mi);
             }
@@ -220,6 +222,9 @@ namespace mtd {
     std::set<MTDHitMatchingInfo> hitsInLayer;
     bool hitMatched = false;
 
+    const float spaceChi2Cut = ilay->isBarrel() ? btlChi2Cut_ : etlChi2Cut_;
+    const float timeChi2Cut = ilay->isBarrel() ? btlTimeChi2Cut_ : etlTimeChi2Cut_;
+
     using namespace std::placeholders;
     auto find_hits = std::bind(find_hits_in_dets,
                                std::cref(hits),
@@ -236,7 +241,8 @@ namespace mtd {
                                bsTimeSpread_,
                                prop,
                                theEstimator_.get(),
-                               std::ref(hitsInLayer));
+                               std::ref(hitsInLayer),
+                               timeChi2Cut >= 0.f);
 
     const bool matchVertex = vtxTimeError > 0.f;
     if (matchVertex) {
@@ -245,14 +251,11 @@ namespace mtd {
       find_hits(0, 0, false);
     }
 
-    const float spaceChi2Cut = ilay->isBarrel() ? btlChi2Cut_ : etlChi2Cut_;
-    const float timeChi2Cut = ilay->isBarrel() ? btlTimeChi2Cut_ : etlTimeChi2Cut_;
-
     if (!hitsInLayer.empty()) {
       auto const& firstHit = *hitsInLayer.begin();
       LogTrace("TrackExtenderWithMTD") << "TrackExtenderWithMTD: matching trial 1: estChi2= " << firstHit.estChi2
                                        << " timeChi2= " << firstHit.timeChi2;
-      if (firstHit.estChi2 < spaceChi2Cut && firstHit.timeChi2 < timeChi2Cut) {
+      if (firstHit.estChi2 < spaceChi2Cut && (timeChi2Cut < 0.f || firstHit.timeChi2 < timeChi2Cut)) {
         hitMatched = true;
         output.push_back(hitbuilder_->build(firstHit.hit));
         if (firstHit < bestHit)
@@ -268,7 +271,7 @@ namespace mtd {
         auto const& firstHit = *hitsInLayer.begin();
         LogTrace("TrackExtenderWithMTD") << "TrackExtenderWithMTD: matching trial 2: estChi2= " << firstHit.estChi2
                                          << " timeChi2= " << firstHit.timeChi2;
-        if (firstHit.timeChi2 < timeChi2Cut && firstHit.estChi2 < spaceChi2Cut) {
+        if ((timeChi2Cut < 0.f || firstHit.timeChi2 < timeChi2Cut) && firstHit.estChi2 < spaceChi2Cut) {
           hitMatched = true;
           output.push_back(hitbuilder_->build(firstHit.hit));
           if (firstHit < bestHit)

@@ -13,6 +13,7 @@ namespace mtd {
       hit = nullptr;
       estChi2 = std::numeric_limits<float>::max();
       timeChi2 = std::numeric_limits<float>::max();
+      useTimeChi2InComparison = true;
     }
 
     //Operator used to sort the hits while performing the matching step at the MTD
@@ -27,11 +28,14 @@ namespace mtd {
         return chi2(high_weight) < m2.chi2(high_weight);
     }
 
-    inline float chi2(float timeWeight = 1.f) const { return estChi2 + timeWeight * timeChi2; }
+    inline float chi2(float timeWeight = 1.f) const {
+      return useTimeChi2InComparison ? estChi2 + timeWeight * timeChi2 : estChi2;
+    }
 
     const MTDTrackingRecHit* hit;
     float estChi2;
     float timeChi2;
+    bool useTimeChi2InComparison;
   };
 
 }  // namespace mtd

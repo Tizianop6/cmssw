@@ -29,27 +29,31 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T35', ''
 process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 #Setup FWK for multithreaded
-process.options.numberOfThreads = 4
+process.options.numberOfThreads = 1
 process.options.numberOfStreams = 0
 process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
 
 process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(10),
+    reportEvery = cms.untracked.int32(1),
 )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+        'root://cms-xrd-global.cern.ch///store/relval/CMSSW_15_1_0_pre1/RelValTTbar_14TeV/GEN-SIM-RECO/PU_141X_mcRun4_realistic_v3_STD_Run4D110_PU-v1/2580000/0ce6d3c8-b0fc-4a4b-9439-f192ce659930.root'
     )
 )
 
 # For playback pileup mode
 # process.RandomNumberGeneratorService.restoreStateLabel=cms.untracked.string("randomEngineStateProducer")
 # process.mix.playback = True
+outname = "tree.root"
+process.TFileService = cms.Service("TFileService",
+                                    fileName = cms.string(outname)
+                                   )
 
 process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)

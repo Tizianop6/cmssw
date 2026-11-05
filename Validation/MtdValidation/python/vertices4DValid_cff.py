@@ -6,3 +6,5 @@ from RecoVertex.Configuration.RecoVertex_cff import unsortedOfflinePrimaryVertic
 # higher eta cut for the phase 2 tracker
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
 phase2_tracker.toModify(vertices4DValid, TkFilterParameters = cms.PSet(unsortedOfflinePrimaryVertices4D.TkFilterParameters.clone()))
+
+vertices4DValid.muonLabel = cms.InputTag("muons", "", "RECO")
